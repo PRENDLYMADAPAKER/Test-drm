@@ -1,89 +1,40 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <title>DRM IPTV Player</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.5.2/shaka-player.compiled.min.js"></script>
+  <meta charset="utf-8">
+  <title>DRM Test - Shaka</title>
+  <script src="https://cdn.jsdelivr.net/npm/shaka-player@4.3.5/dist/shaka-player.compiled.js"></script>
   <style>
-    body { margin: 0; background: #000; color: white; font-family: sans-serif; }
-    video { width: 100%; height: 50vh; background: black; }
-    #channels { display: flex; flex-wrap: wrap; gap: 10px; padding: 10px; }
-    .channel { width: 150px; background: #222; border-radius: 10px; padding: 10px; cursor: pointer; }
-    .channel img { width: 100%; height: 80px; object-fit: contain; border-radius: 5px; }
-    .channel p { margin: 5px 0 0; font-size: 14px; text-align: center; }
+    body { margin: 0; background: black; display: flex; justify-content: center; align-items: center; height: 100vh; }
+    video { width: 90%; max-width: 800px; border: 2px solid hotpink; border-radius: 10px; }
   </style>
 </head>
 <body>
 
-<video id="video" controls autoplay></video>
-<div id="channels"></div>
+<video id="video" autoplay controls></video>
 
 <script>
-const m3uRaw = `
-#EXTINF:-1 tvg-logo="https://i.imgur.com/3myn4zH.png" group-title="Local Channels",A2Z
-#KODIPROP:inputstream.adaptive.license_type=com.widevine.alpha
-#KODIPROP:inputstream.adaptive.license_key=http://143.44.136.74:9443/widevine/?deviceId=02:00:00:00:00:00
-http://143.44.136.110:6910/001/2/ch00000090990000001087/manifest.mpd?virtualDomain=001.live_hls.zte.com
+  async function initPlayer() {
+    const video = document.getElementById('video');
+    const player = new shaka.Player(video);
 
-#EXTINF:-1 tvg-logo="https://i.imgur.com/Z0apbtK.png" group-title="Drama",GMA
-#KODIPROP:inputstream.adaptive.license_type=com.widevine.alpha
-#KODIPROP:inputstream.adaptive.license_key=http://example.com/license
-https://drmtest2.com/stream/manifest.mpd
-`;
+    player.configure({
+      drm: {
+        servers: {
+          'com.widevine.alpha': 'http://143.44.136.74:9443/widevine/?deviceId=02:00:00:00:00:00'
+        }
+      }
+    });
 
-const video = document.getElementById('video');
-const channelsDiv = document.getElementById('channels');
-
-function parseM3U(m3u) {
-  const lines = m3u.trim().split("\n");
-  const entries = [];
-  let temp = {};
-  for (let line of lines) {
-    if (line.startsWith("#EXTINF")) {
-      const name = line.match(/,(.*)/)?.[1];
-      const logo = line.match(/tvg-logo="(.*?)"/)?.[1];
-      temp.name = name || "Untitled";
-      temp.logo = logo || "";
-    } else if (line.includes("license_key=")) {
-      temp.license = line.split("license_key=")[1].trim();
-    } else if (line.startsWith("http")) {
-      temp.url = line.trim();
-      entries.push({ ...temp });
-      temp = {};
+    try {
+      await player.load('http://143.44.136.110:6910/001/2/ch00000090990000001087/manifest.mpd?virtualDomain=001.live_hls.zte.com');
+      console.log('The video has now been loaded!');
+    } catch (e) {
+      console.error('Error loading video:', e);
     }
   }
-  return entries;
-}
 
-const playlist = parseM3U(m3uRaw);
-
-playlist.forEach(channel => {
-  const div = document.createElement("div");
-  div.className = "channel";
-  div.innerHTML = `<img src="${channel.logo}" /><p>${channel.name}</p>`;
-  div.onclick = () => playDRM(channel.url, channel.license);
-  channelsDiv.appendChild(div);
-});
-
-function playDRM(url, licenseUrl) {
-  const player = new shaka.Player(video);
-  shaka.polyfill.installAll();
-
-  player.configure({
-    drm: {
-      servers: {
-        'com.widevine.alpha': licenseUrl
-      }
-    }
-  });
-
-  player.load(url).then(() => {
-    console.log('Playing:', url);
-  }).catch(e => {
-    console.error('Shaka error', e);
-  });
-}
+  document.addEventListener('DOMContentLoaded', initPlayer);
 </script>
 
 </body>
