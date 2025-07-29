@@ -1,306 +1,90 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>NZM IPTV</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600&display=swap" rel="stylesheet">
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-  <script src="https://cdn.jsdelivr.net/npm/shaka-player@4.3.5/dist/shaka-player.compiled.js"></script>
+  <meta charset="UTF-8" />
+  <title>DRM IPTV Player</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.5.2/shaka-player.compiled.min.js"></script>
   <style>
-    * { box-sizing: border-box; font-family: 'Orbitron', sans-serif; }
-    body, html {
-      margin: 0; padding: 0; height: 100%;
-      background: black; color: white;
-    }
-    #loginSection {
-      display: flex; justify-content: center; align-items: center;
-      height: 100vh;
-      background: url('https://i.imgur.com/yeftKeD.jpeg') no-repeat center center fixed;
-      background-size: cover;
-    }
-    .login-box {
-      background: rgba(0,0,0,0.6); padding: 30px 40px; border-radius: 12px;
-      backdrop-filter: blur(8px); text-align: center;
-    }
-    .login-box input {
-      display: block; width: 250px; margin: 10px auto;
-      padding: 10px; border-radius: 6px; border: none;
-    }
-    .login-box button {
-      background: hotpink; border: none; color: white; font-weight: bold;
-      padding: 10px 25px; border-radius: 6px; cursor: pointer;
-    }
-    #iptvSection {
-      display: none;
-      min-height: 100vh;
-      background: url('https://i.imgur.com/yeftKeD.jpeg') no-repeat center center fixed;
-      background-size: cover;
-      padding: 10px;
-    }
-    .header {
-      display: flex; align-items: center; justify-content: space-between;
-      margin-bottom: 10px;
-    }
-    .logout-btn {
-      background: crimson; padding: 8px 16px;
-      border-radius: 6px; cursor: pointer;
-    }
-    video {
-      width: 100%; border-radius: 10px; background: black;
-    }
-    #nowChannel {
-      text-align: center; font-weight: bold; margin: 10px 0;
-    }
-    #search {
-      width: 100%; padding: 10px; border-radius: 8px; margin: 10px 0;
-      font-size: 16px;
-    }
-    .carousel, #channelList {
-      display: flex; overflow-x: auto; gap: 8px;
-      padding: 10px 0; scroll-behavior: smooth;
-    }
-    .carousel button {
-      background: #222; color: white; border: none;
-      padding: 6px 12px; border-radius: 20px; white-space: nowrap;
-    }
-    .carousel button.active {
-      background: hotpink;
-    }
-    .channel {
-      flex: 0 0 48%; background: rgba(255,255,255,0.1);
-      border-radius: 10px; text-align: center; padding: 10px;
-    }
-    .channel img {
-      width: 100%; max-height: 100px; object-fit: contain;
-    }
-    #reconnecting {
-      text-align: center; color: red; display: none;
-      margin: 5px 0;
-    }
-    .scrollBtn {
-      position: absolute; top: 50%; transform: translateY(-50%);
-      background: rgba(0,0,0,0.5); color: white; border: none;
-      font-size: 20px; padding: 10px; z-index: 10; border-radius: 8px; cursor: pointer;
-    }
-    #catLeft, #chanLeft { left: 0; }
-    #catRight, #chanRight { right: 0; }
+    body { margin: 0; background: #000; color: white; font-family: sans-serif; }
+    video { width: 100%; height: 50vh; background: black; }
+    #channels { display: flex; flex-wrap: wrap; gap: 10px; padding: 10px; }
+    .channel { width: 150px; background: #222; border-radius: 10px; padding: 10px; cursor: pointer; }
+    .channel img { width: 100%; height: 80px; object-fit: contain; border-radius: 5px; }
+    .channel p { margin: 5px 0 0; font-size: 14px; text-align: center; }
   </style>
 </head>
 <body>
-<div id="loginSection">
-  <div class="login-box">
-    <h2>NZM IPTV Login</h2>
-    <input type="text" id="email" placeholder="Username">
-    <input type="password" id="password" placeholder="Password">
-    <button id="loginBtn">Login</button>
-    <p id="loginError" style="color:red;"></p>
-  </div>
-</div>
-<div id="iptvSection">
-  <div class="header">
-    <img src="logo.png" alt="Logo" style="width:60px;height:60px;border-radius:50%;">
-    <div class="logout-btn" onclick="logout()">Logout</div>
-  </div>
-  <video id="player" controls autoplay></video>
-  <div id="reconnecting">Reconnecting stream...</div>
-  <div id="nowChannel">Now Playing</div>
-  <input type="text" id="search" placeholder="Search channels...">
-  <div style="position:relative">
-    <button id="catLeft" class="scrollBtn" onclick="scrollCategory(-1)">⏪</button>
-    <div id="categoryList" class="carousel"></div>
-    <button id="catRight" class="scrollBtn" onclick="scrollCategory(1)">⏩</button>
-  </div>
-  <div style="position:relative">
-    <button id="chanLeft" class="scrollBtn" onclick="scrollChannel(-1)">⏪</button>
-    <div id="channelList"></div>
-    <button id="chanRight" class="scrollBtn" onclick="scrollChannel(1)">⏩</button>
-  </div>
-</div>
 
-  <script src="https://cdn.jsdelivr.net/npm/shaka-player@4.3.5/dist/shaka-player.compiled.js"></script>
+<video id="video" controls autoplay></video>
+<div id="channels"></div>
+
 <script>
-const firebaseConfig = {
-  apiKey: "AIzaSyDssixgarRWvLMKtUsX7HLEt8uPGmNIRak",
-  authDomain: "iptv-login-3204b.firebaseapp.com",
-  databaseURL: "https://iptv-login-3204b-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "iptv-login-3204b",
-  storageBucket: "iptv-login-3204b.appspot.com",
-  messagingSenderId: "464216999882",
-  appId: "1:464216999882:web:d7e1f7d44adacd8b46b133"
-};
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
+const m3uRaw = `
+#EXTINF:-1 tvg-logo="https://i.imgur.com/3myn4zH.png" group-title="Local Channels",A2Z
+#KODIPROP:inputstream.adaptive.license_type=com.widevine.alpha
+#KODIPROP:inputstream.adaptive.license_key=http://143.44.136.74:9443/widevine/?deviceId=02:00:00:00:00:00
+http://143.44.136.110:6910/001/2/ch00000090990000001087/manifest.mpd?virtualDomain=001.live_hls.zte.com
 
-const loginSection = document.getElementById('loginSection');
-const iptvSection = document.getElementById('iptvSection');
-const video = document.getElementById('player');
-const search = document.getElementById('search');
-const channelList = document.getElementById('channelList');
-const categoryList = document.getElementById('categoryList');
-const nowChannel = document.getElementById('nowChannel');
-const reconnecting = document.getElementById('reconnecting');
+#EXTINF:-1 tvg-logo="https://i.imgur.com/Z0apbtK.png" group-title="Drama",GMA
+#KODIPROP:inputstream.adaptive.license_type=com.widevine.alpha
+#KODIPROP:inputstream.adaptive.license_key=http://example.com/license
+https://drmtest2.com/stream/manifest.mpd
+`;
 
-let channels = [], currentCategory = 'All', freezeCheck, lastTime = 0;
-let sessionId = localStorage.getItem('sessionId') || crypto.randomUUID();
-localStorage.setItem('sessionId', sessionId);
+const video = document.getElementById('video');
+const channelsDiv = document.getElementById('channels');
 
-// Login Handler
-document.getElementById("loginBtn").addEventListener("click", async () => {
-  const username = document.getElementById("email").value.trim();
-  const password = document.getElementById("password").value.trim();
-  const loginError = document.getElementById("loginError");
-  if (!username || !password) return loginError.textContent = "Both fields required.";
-
-  try {
-    const userRef = db.ref('users/' + username);
-    const snapshot = await userRef.once('value');
-    if (!snapshot.exists()) return loginError.textContent = "User not found.";
-
-    const data = snapshot.val();
-    if (data.password !== password) return loginError.textContent = "Incorrect password.";
-    if (data.expiration < new Date().toISOString().split("T")[0]) return loginError.textContent = "Account expired.";
-
-    const devices = data.devices || {};
-    if (!devices[sessionId] && Object.keys(devices).length >= data.device_limit) {
-      return loginError.textContent = "Device limit reached.";
-    }
-    await db.ref(`users/${username}/devices/${sessionId}`).set(true);
-    localStorage.setItem('username', username);
-    loginSection.style.display = 'none';
-    iptvSection.style.display = 'block';
-    loadPlaylist();
-  } catch (e) {
-    loginError.textContent = "Login error: " + e.message;
-  }
-});
-
-function logout() {
-  const user = localStorage.getItem("username");
-  if (user) {
-    db.ref('users/' + user + '/devices/' + sessionId).remove();
-    localStorage.removeItem("username");
-  }
-  loginSection.style.display = 'flex';
-  iptvSection.style.display = 'none';
-}
-
-async function loadPlaylist() {
-  const username = localStorage.getItem("username");
-  const snapshot = await db.ref('users/' + username).once('value');
-  const playlistURL = snapshot.val().playlist;
-  try {
-    const res = await fetch(playlistURL);
-    const text = await res.text();
-    channels = parseM3U(text);
-    renderCategories();
-    renderChannels();
-  } catch (e) {
-    nowChannel.textContent = "Failed to load playlist.";
-  }
-}
-
-function parseM3U(data) {
-  const lines = data.split("\n");
-  const items = [], temp = {};
-  let props = {};
+function parseM3U(m3u) {
+  const lines = m3u.trim().split("\n");
+  const entries = [];
+  let temp = {};
   for (let line of lines) {
     if (line.startsWith("#EXTINF")) {
-      const name = line.match(/,(.*)/)?.[1] || 'Unknown';
-      const logo = line.match(/tvg-logo="(.*?)"/)?.[1] || '';
-      const group = line.match(/group-title="(.*?)"/)?.[1] || 'Other';
-      Object.assign(temp, { name, logo, group });
-    } else if (line.startsWith("#KODIPROP")) {
-      const match = line.match(/license_key=(.*)/);
-      if (match) props.license = match[1];
+      const name = line.match(/,(.*)/)?.[1];
+      const logo = line.match(/tvg-logo="(.*?)"/)?.[1];
+      temp.name = name || "Untitled";
+      temp.logo = logo || "";
+    } else if (line.includes("license_key=")) {
+      temp.license = line.split("license_key=")[1].trim();
     } else if (line.startsWith("http")) {
       temp.url = line.trim();
-      temp.license = props.license || null;
-      items.push({ ...temp });
-      Object.keys(temp).forEach(k => delete temp[k]);
-      props = {};
+      entries.push({ ...temp });
+      temp = {};
     }
   }
-  return items;
+  return entries;
 }
 
-function renderCategories() {
-  const groups = ['All', ...new Set(channels.map(c => c.group))];
-  categoryList.innerHTML = '';
-  groups.forEach(group => {
-    const btn = document.createElement('button');
-    btn.textContent = group;
-    if (group === currentCategory) btn.classList.add('active');
-    btn.onclick = () => {
-      currentCategory = group;
-      document.querySelectorAll('.carousel button').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      renderChannels();
-    };
-    categoryList.appendChild(btn);
-  });
-}
+const playlist = parseM3U(m3uRaw);
 
-function renderChannels() {
-  const keyword = search.value.toLowerCase();
-  const filtered = channels.filter(c => (currentCategory === 'All' || c.group === currentCategory) && c.name.toLowerCase().includes(keyword));
-  channelList.innerHTML = '';
-  filtered.forEach(c => {
-    const div = document.createElement('div');
-    div.className = 'channel';
-    div.innerHTML = `<img src="${c.logo}" onerror="this.src='https://via.placeholder.com/150x70?text=No+Logo'"><p>${c.name}</p>`;
-    div.onclick = () => playChannel(c);
-    channelList.appendChild(div);
-  });
-}
-
-function playChannel(channel) {
-  nowChannel.textContent = `Now Playing: ${channel.name}`;
-  if (channel.url.endsWith(".mpd") && channel.license) {
-    const player = new shaka.Player(video);
-    player.configure({
-      drm: { servers: { 'com.widevine.alpha': channel.license } }
-    });
-    player.load(channel.url).catch(err => {
-      nowChannel.textContent = '❌ DRM playback failed.';
-    });
-  } else if (Hls.isSupported() && channel.url.endsWith(".m3u8")) {
-    const hls = new Hls();
-    hls.loadSource(channel.url);
-    hls.attachMedia(video);
-  } else {
-    video.src = channel.url;
-  }
-  video.play();
-}
-
-function scrollCategory(dir) {
-  categoryList.scrollBy({ left: dir * 200, behavior: 'smooth' });
-}
-function scrollChannel(dir) {
-  channelList.scrollBy({ left: dir * 200, behavior: 'smooth' });
-}
-
-search.addEventListener('input', renderChannels);
-window.addEventListener('load', async () => {
-  const user = localStorage.getItem("username");
-  if (!user) return;
-  const snapshot = await db.ref('users/' + user).once('value');
-  const data = snapshot.val();
-  const today = new Date().toISOString().split("T")[0];
-  if (!snapshot.exists() || data.expiration < today || (Object.keys(data.devices || {}).length >= data.device_limit && !data.devices[sessionId])) {
-    localStorage.removeItem("username");
-    localStorage.removeItem("sessionId");
-    return;
-  }
-  loginSection.style.display = 'none';
-  iptvSection.style.display = 'block';
-  loadPlaylist();
+playlist.forEach(channel => {
+  const div = document.createElement("div");
+  div.className = "channel";
+  div.innerHTML = `<img src="${channel.logo}" /><p>${channel.name}</p>`;
+  div.onclick = () => playDRM(channel.url, channel.license);
+  channelsDiv.appendChild(div);
 });
-    </script>
-  
-<!-- PART 2 JavaScript Logic will follow -->
+
+function playDRM(url, licenseUrl) {
+  const player = new shaka.Player(video);
+  shaka.polyfill.installAll();
+
+  player.configure({
+    drm: {
+      servers: {
+        'com.widevine.alpha': licenseUrl
+      }
+    }
+  });
+
+  player.load(url).then(() => {
+    console.log('Playing:', url);
+  }).catch(e => {
+    console.error('Shaka error', e);
+  });
+}
+</script>
+
 </body>
 </html>
