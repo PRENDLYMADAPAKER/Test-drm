@@ -7,7 +7,6 @@
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600&display=swap" rel="stylesheet">
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
   <style>
     * { box-sizing: border-box; font-family: 'Orbitron', sans-serif; }
     body, html { margin: 0; padding: 0; height: 100%; background: black; color: white; }
@@ -74,18 +73,12 @@
   </div>
 </div>
 <script>
-const firebaseConfig = {
-  apiKey: "AIzaSyDssixgarRWvLMKtUsX7HLEt8uPGmNIRak",
-  authDomain: "iptv-login-3204b.firebaseapp.com",
-  databaseURL: "https://iptv-login-3204b-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "iptv-login-3204b",
-  storageBucket: "iptv-login-3204b.appspot.com",
-  messagingSenderId: "464216999882",
-  appId: "1:464216999882:web:d7e1f7d44adacd8b46b133"
-};
+// Firebase Config
+const firebaseConfig = { apiKey: "AIzaSyDssixgarRWvLMKtUsX7HLEt8uPGmNIRak", authDomain: "iptv-login-3204b.firebaseapp.com", databaseURL: "https://iptv-login-3204b-default-rtdb.asia-southeast1.firebasedatabase.app", projectId: "iptv-login-3204b", storageBucket: "iptv-login-3204b.appspot.com", messagingSenderId: "464216999882", appId: "1:464216999882:web:d7e1f7d44adacd8b46b133" };
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
+// Elements
 const loginSection = document.getElementById('loginSection');
 const iptvSection = document.getElementById('iptvSection');
 const video = document.getElementById('player');
@@ -99,23 +92,20 @@ let channels = [], currentCategory = 'All', freezeCheck, lastTime = 0;
 let sessionId = localStorage.getItem('sessionId') || crypto.randomUUID();
 localStorage.setItem('sessionId', sessionId);
 
-document.getElementById("loginBtn").addEventListener("click", async () => {
-  const username = document.getElementById("email").value.trim();
-  const password = document.getElementById("password").value.trim();
-  const loginError = document.getElementById("loginError");
-  if (!username || !password) return loginError.textContent = "Both fields required.";
+// Login button
+loginBtn.onclick = async () => {
+  const username = email.value.trim();
+  const passwordVal = password.value.trim();
+  if (!username || !passwordVal) return loginError.textContent = "Both fields required.";
   try {
-    const userRef = db.ref('users/' + username);
-    const snapshot = await userRef.once('value');
+    const snapshot = await db.ref('users/' + username).once('value');
     if (!snapshot.exists()) return loginError.textContent = "User not found.";
     const data = snapshot.val();
-    if (data.password !== password) return loginError.textContent = "Incorrect password.";
+    if (data.password !== passwordVal) return loginError.textContent = "Incorrect password.";
     const today = new Date().toISOString().split("T")[0];
     if (data.expiration < today) return loginError.textContent = "Account expired.";
     const devices = data.devices || {};
-    if (!devices[sessionId] && Object.keys(devices).length >= data.device_limit) {
-      return loginError.textContent = "Device limit reached.";
-    }
+    if (!devices[sessionId] && Object.keys(devices).length >= data.device_limit) return loginError.textContent = "Device limit reached.";
     await db.ref(`users/${username}/devices/${sessionId}`).set(true);
     localStorage.setItem('username', username);
     loginSection.style.display = 'none';
@@ -127,7 +117,7 @@ document.getElementById("loginBtn").addEventListener("click", async () => {
   } catch (e) {
     loginError.textContent = "Login error: " + e.message;
   }
-});
+};
 
 function logout() {
   const user = localStorage.getItem("username");
@@ -135,15 +125,13 @@ function logout() {
     db.ref('users/' + user + '/devices/' + sessionId).remove();
     localStorage.removeItem("username");
   }
-  video.pause();
-  video.src = "";
-  video.load();
+  video.pause(); video.src = ""; video.load();
   loginSection.style.display = 'flex';
   iptvSection.style.display = 'none';
 }
 
 async function loadPlaylist() {
-  const playlistURL = "https://raw.githubusercontent.com/PRENDLYMADAPAKER/ANG-KALAT-MO/refs/heads/main/IPTVPREMIUM.m3u";
+  const playlistURL = "https://raw.githubusercontent.com/PRENDLYMADAPAKER/ANG-KALAT-MO/main/IPTVPREMIUM.m3u";
   try {
     const res = await fetch(playlistURL);
     const text = await res.text();
@@ -157,8 +145,7 @@ async function loadPlaylist() {
 
 function parseM3U(data) {
   const lines = data.split("\n");
-  const items = [];
-  let temp = {};
+  const items = []; let temp = {};
   for (let line of lines) {
     if (line.startsWith("#EXTINF")) {
       const name = line.match(/,(.*)/)?.[1] || 'Unknown';
@@ -167,8 +154,7 @@ function parseM3U(data) {
       temp = { name, logo, group };
     } else if (line.startsWith("http")) {
       temp.url = line.trim();
-      items.push(temp);
-      temp = {};
+      items.push(temp); temp = {};
     }
   }
   return items;
@@ -207,17 +193,28 @@ function renderChannels() {
   });
 }
 
+function loadHlsScript(version, callback) {
+  const existing = document.getElementById('dynamicHls');
+  if (existing) existing.remove();
+  const script = document.createElement('script');
+  script.id = 'dynamicHls';
+  script.src = `https://cdn.jsdelivr.net/npm/hls.js@${version}`;
+  script.onload = callback;
+  document.body.appendChild(script);
+}
+
 function playChannel(channel) {
   const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-  if (!isMobile && Hls.isSupported() && channel.url.endsWith(".m3u8")) {
-    const hls = new Hls();
-    hls.loadSource(channel.url);
-    hls.attachMedia(video);
-    hls.on(Hls.Events.MANIFEST_PARSED, () => {
-      video.play();
-    });
-    hls.on(Hls.Events.ERROR, () => {
-      nowChannel.textContent = "\u26A0\uFE0F Failed to play channel.";
+  const hlsVersion = channel.group === 'UDPTV Live Streams' ? 'latest' : '1.1.5';
+  if (!isMobile && channel.url.endsWith(".m3u8")) {
+    loadHlsScript(hlsVersion, () => {
+      if (window.hls) window.hls.destroy();
+      const hls = new Hls();
+      window.hls = hls;
+      hls.loadSource(channel.url);
+      hls.attachMedia(video);
+      hls.on(Hls.Events.MANIFEST_PARSED, () => video.play());
+      hls.on(Hls.Events.ERROR, () => nowChannel.textContent = "\u26A0\uFE0F Failed to play channel.");
     });
   } else {
     video.src = channel.url;
@@ -240,9 +237,7 @@ function startFreezeMonitor() {
       if (video.currentTime === lastTime) {
         reconnecting.style.display = 'block';
         video.load(); video.play();
-      } else {
-        reconnecting.style.display = 'none';
-      }
+      } else reconnecting.style.display = 'none';
       lastTime = video.currentTime;
     }
   }, 5000);
@@ -256,17 +251,13 @@ window.addEventListener('load', async () => {
   const savedSession = localStorage.getItem("sessionId");
   if (!savedUser || !savedSession) return;
   const snapshot = await db.ref('users/' + savedUser).once('value');
-  if (!snapshot.exists()) {
-    localStorage.clear();
-    return;
-  }
+  if (!snapshot.exists()) { localStorage.clear(); return; }
   const data = snapshot.val();
   const today = new Date().toISOString().split("T")[0];
   const isExpired = data.expiration < today;
   const devices = data.devices || {};
   if (isExpired || (!devices[savedSession] && Object.keys(devices).length >= data.device_limit)) {
-    localStorage.clear();
-    return;
+    localStorage.clear(); return;
   }
   loginSection.style.display = 'none';
   iptvSection.style.display = 'block';
