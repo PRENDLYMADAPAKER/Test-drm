@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>DRM Test - A2Z Channel</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.3.5/shaka-player.compiled.min.js"></script>
+  <style>
+    body {
+      background-color: black;
+      color: white;
+      font-family: sans-serif;
+      text-align: center;
+      padding: 30px;
+    }
+    video {
+      width: 90%;
+      max-width: 720px;
+      border: 2px solid hotpink;
+      border-radius: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h2>A2Z - DRM Test</h2>
+  <video id="video" controls autoplay></video>
+  <p id="status">Loading...</p>
+
+  <script>
+    async function initPlayer() {
+      const manifestUri = "http://143.44.136.110:6910/001/2/ch00000090990000001087/manifest.mpd?virtualDomain=001.live_hls.zte.com";
+
+      const video = document.getElementById('video');
+      const player = new shaka.Player(video);
+
+      player.configure({
+        drm: {
+          servers: {
+            'com.widevine.alpha': 'http://143.44.136.74:9443/widevine/?deviceId=02:00:00:00:00:00'
+          }
+        }
+      });
+
+      player.addEventListener('error', e => {
+        document.getElementById('status').textContent = '❌ Error: ' + e.detail.message;
+        console.error(e);
+      });
+
+      try {
+        await player.load(manifestUri);
+        document.getElementById('status').textContent = '✅ Loaded and playing!';
+      } catch (e) {
+        document.getElementById('status').textContent = '❌ Failed to load stream.';
+        console.error(e);
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', initPlayer);
+  </script>
+</body>
+</html>
