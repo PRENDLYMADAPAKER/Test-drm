@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/x-icon" href="Jinwoo.png" />
+  <title>Shakzz TV</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- JW Player -->
+  <script src="https://ssl.p.jwpcdn.com/player/v/8.36.6/jwplayer.js"></script>
+  <script>jwplayer.key = "ITWMv7t88JGzI0xPwW8I0+LveiXX9SWbfdmt0ArUSyc=";</script>
+
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+
+  <style>
+    :root {
+      --bg-color: #111;
+      --text-color: white;
+      --accent-color: royalblue;
+    }
+
+    * {
+      box-sizing: border-box;
+      transition: background 0.3s, color 0.3s;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      font-family: "Segoe UI", sans-serif;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+    }
+
+    body {
+      overflow-y: hidden;
+    }
+
+    .top-nav {
+      width: 100%;
+      background-color: #000;
+      border-bottom: 1px solid white;
+      padding: 10px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      flex-wrap: wrap;
+    }
+
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+    }
+
+    .nav-logo img {
+      height: 40px;
+    }
+
+    .logo-text {
+      font-size: 1.5em;
+      color: var(--accent-color);
+      font-weight: bold;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .nav-links a {
+      color: #ccc;
+      text-decoration: none;
+      font-weight: bold;
+      transition: color 0.3s;
+    }
+
+    .nav-links a:hover {
+      color: var(--accent-color);
+    }
+
+    main {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+    }
+
+    .sidebar {
+      width: 300px;
+      background-color: #222;
+      border-right: 2px solid #222;
+      display: flex;
+      flex-direction: column;
+      padding: 10px 0;
+      overflow: hidden;
+      height: 100%;
+    }
+
+    .search-container {
+      position: relative;
+      display: flex;
+      align-items: center;
+      margin: 0 10px 8px 10px;
+    }
+
+    .search-container input {
+      flex: 1;
+      padding: 8px 30px 8px 8px;
+      border-radius: 6px;
+      border: 1px solid #2f2f2f;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      width: 100%;
+    }
+
+    .clear-btn {
+      position: absolute;
+      top: 42%;
+      right: 12px;
+      transform: translateY(-50%);
+      font-size: 1.5em;
+      color: #666;
+      cursor: pointer;
+      display: none;
+      user-select: none;
+      line-height: 8;
+      z-index: 10;
+    }
+
+    .channel-list {
+      overflow-y: auto;
+      flex: 1;
+      padding: 0 10px;
+    }
+
+    .channel-button {
+      width: 100%;
+      padding: 10px;
+      margin: 5px 0;
+      background-color: #333;
+      border: 1px solid #2f2f2f;
+      border-radius: 8px;
+      color: white;
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+
+    .channel-button:hover {
+      background-color: #222;
+    }
+
+    .channel-logo {
+      width: 50px;
+      height: 50px;
+      object-fit: contain;
+      border-radius: 6px;
+      background-color: white;
+    }
+
+    .main {
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 10px;
+    }
+
+    #channelInfo {
+      display: none;
+    }
+
+    #video {
+      width: 100%;
+      height: 100%;
+    }
+
+    .jwplayer {
+      width: 100% !important;
+      height: 100% !important;
+      aspect-ratio: unset !important;
+      object-fit: fill !important;
+    }
+
+    #channelCount {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+      padding: 10px;
+      font-weight: bold;
+      text-align: center;
+    }
+
+    #channelCountText,
+    #channelCount i {
+      animation: rgbText 3s linear infinite;
+      font-size: 1.2rem;
+    }
+
+    @keyframes rgbText {
+      0% { color: red; }
+      25% { color: orange; }
+      50% { color: lime; }
+      75% { color: cyan; }
+      100% { color: magenta; }
+    }
+
+    .contact-footer {
+      background-color: #000;
+      padding: 10px 20px;
+      color: #ccc;
+      border-top: 1px solid white;
+      width: 100%;
+      font-size: 0.85em;
+    }
+
+    .footer-content {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .left-section {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 1.2em;
+      flex-wrap: wrap;
+    }
+
+    .right-section {
+      font-size: 0.9em;
+      color: #555;
+    }
+
+    .social-link {
+      color: #ccc;
+      text-decoration: none !important;
+    }
+
+    .social-link:hover {
+      color: var(--accent-color);
+    }
+
+    @media (max-width: 768px) {
+      main {
+        flex-direction: column;
+      }
+
+      .sidebar {
+        width: 100%;
+        border-right: none;
+        border-bottom: 2px solid #333;
+        max-height: 50vh;
+      }
+
+      .top-nav {
+        flex-direction: row;
+        justify-content: space-between;
+        padding: 10px;
+      }
+
+      .nav-links {
+        flex-direction: row;
+        gap: 15px;
+      }
+
+      .nav-logo img {
+        height: 30px;
+      }
+
+      .footer-content {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        gap: 10px;
+      }
+
+      .left-section, .right-section {
+        justify-content: center;
+      }
+
+      #video {
+        order: -1;
+        width: 100%;
+        max-height: 300px;
+        aspect-ratio: 16 / 9;
+      }
+    }
+  </style>
+</head>
+<body>
+  <nav class="top-nav">
+    <div class="nav-logo" onclick="location.reload()">
+      <img src="Jinwoo.png" alt="Logo" />
+      <span class="logo-text">Shakzz TV</span>
+    </div>
+    <div class="nav-links">
+      <a href="https://www.youtube.com/watch?v=dQw4w9WgXcQ" target="_blank">Want the channels for OTT?</a>
+    </div>
+  </nav>
+
+  <main>
+    <div class="main">
+      <div id="video"></div>
+      <div id="channelInfo"></div>
+    </div>
+
+    <div class="sidebar">
+      <div class="search-container">
+        <input type="text" id="search" placeholder="Search channel..." />
+        <span id="clearSearch" class="clear-btn">&times;</span>
+      </div>
+      <div class="channel-list" id="channelList"></div>
+      <div id="channelCount">
+        <i class="fas fa-tv"></i>
+        <span id="channelCountText">0 channels found</span>
+      </div>
+    </div>
+  </main>
+
+  <footer class="contact-footer">
+    <div class="footer-content">
+      <div class="left-section">
+        Contact Me:
+        <a href="https://facebook.com/profile.php?id=100083316728361" target="_blank" class="social-link"><i class="fab fa-facebook"></i></a>
+        <a href="https://youtube.com/@Shakzz05" target="_blank" class="social-link"><i class="fab fa-youtube"></i></a>
+        <a href="https://mail.google.com/mail/?view=cm&to=shakzz05.business@gmail.com" target="_blank" rel="noopener noreferrer" class="social-link"><i class="fas fa-envelope"></i></a>
+        <noscript><a href="mailto:shakzz05.business@gmail.com" class="social-link"><i class="fas fa-envelope"></i></a></noscript>
+      </div>
+      <div class="right-section">© All rights reserved 2025</div>
+    </div>
+  </footer>
+
+  <script>
+    const searchInput = document.getElementById('search');
+    const clearBtn = document.getElementById('clearSearch');
+
+    searchInput.addEventListener('input', () => {
+      clearBtn.style.display = searchInput.value ? 'block' : 'none';
+    });
+
+    clearBtn.addEventListener('click', () => {
+      searchInput.value = '';
+      clearBtn.style.display = 'none';
+      searchInput.dispatchEvent(new Event('input'));
+    });
+  </script>
+
+  <!-- Your updated cutie.js should handle all logic -->
+  <script src="cutie.js"></script>
+</body>
+</html>
