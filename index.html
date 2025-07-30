@@ -108,7 +108,9 @@
   </div>
   </div>
 
-  <script>
+  // ✅ PART 2 - Script Section (with TheTVApp fix)
+
+<script>
 const firebaseConfig = {
   apiKey: "AIzaSyDssixgarRWvLMKtUsX7HLEt8uPGmNIRak",
   authDomain: "iptv-login-3204b.firebaseapp.com",
@@ -135,10 +137,7 @@ localStorage.setItem('sessionId', sessionId);
 
 let channels = [], currentCategory = 'All', freezeCheck, lastTime = 0;
 
-const playlistURLs = [
-  { url: "https://raw.githubusercontent.com/PRENDLYMADAPAKER/ANG-KALAT-MO/main/UDPTV.m3u", group: "UDPTV Live Streams" },
-  { url: "https://raw.githubusercontent.com/PRENDLYMADAPAKER/ANG-KALAT-MO/main/TheTVApp.m3u", group: "TheTVApp" }
-];
+// --- Login
 
 document.getElementById("loginBtn").addEventListener("click", async () => {
   const username = document.getElementById("email").value.trim();
@@ -152,24 +151,16 @@ document.getElementById("loginBtn").addEventListener("click", async () => {
     if (!snapshot.exists()) return loginError.textContent = "User not found.";
     const data = snapshot.val();
 
-    const correctPassword = data.devices?.password;
+    const correctPw = data.devices?.password;
     const expiration = data.devices?.expiration;
     const deviceLimit = data.device_limit || 1;
     const devices = data.devices || {};
 
-    if (!correctPassword || correctPassword !== password) {
-      return loginError.textContent = "Incorrect password.";
-    }
-
+    if (correctPw !== password) return loginError.textContent = "Incorrect password.";
     const today = new Date().toISOString().split("T")[0];
-    if (expiration && expiration < today) {
-      return loginError.textContent = "Account expired.";
-    }
+    if (expiration && expiration < today) return loginError.textContent = "Account expired.";
 
-    const activeSessions = Object.keys(devices).filter(key =>
-      !["password", "expiration", "playlist", "status"].includes(key)
-    );
-
+    const activeSessions = Object.keys(devices).filter(key => !['password','expiration','playlist','status'].includes(key));
     if (!devices[sessionId] && activeSessions.length >= deviceLimit) {
       return loginError.textContent = "Device limit reached.";
     }
@@ -194,12 +185,15 @@ function logout() {
     db.ref('users/' + user + '/devices/' + sessionId).remove();
     localStorage.removeItem("username");
   }
-  video.pause();
-  video.src = "";
-  video.load();
+  video.pause(); video.src = ""; video.load();
   loginSection.style.display = 'flex';
   iptvSection.style.display = 'none';
 }
+
+const playlistURLs = [
+  { url: "https://raw.githubusercontent.com/PRENDLYMADAPAKER/ANG-KALAT-MO/main/UDPTV.m3u", group: "UDPTV Live Streams" },
+  { url: "https://raw.githubusercontent.com/PRENDLYMADAPAKER/ANG-KALAT-MO/main/TheTVApp.m3u", group: "TheTVApp" }
+];
 
 async function loadPlaylist() {
   try {
@@ -277,22 +271,32 @@ async function loadHlsVersion(version) {
     const script = document.createElement("script");
     script.id = "hlsjs-dynamic";
     script.src = `https://cdn.jsdelivr.net/npm/hls.js@${version}`;
-    script.onload = resolve;
-    script.onerror = reject;
+    script.onload = () => {
+      console.log("✅ Loaded hls.js version:", version);
+      resolve();
+    };
+    script.onerror = () => {
+      console.error("❌ Failed to load hls.js version:", version);
+      reject();
+    };
     document.head.appendChild(script);
   });
 }
 
 async function playChannel(channel) {
   const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-  video.pause();
-  video.src = "";
-  video.load();
-
+  video.pause(); video.src = ""; video.load();
   try {
     if (!isMobile && channel.url.endsWith(".m3u8")) {
-      const version = channel.group === "UDPTV Live Streams" ? "1.4.12" : "1.1.5";
+      const groupName = (channel.group || "").trim().toLowerCase();
+      const version = groupName === "udptv live streams" ? "1.4.12" : "1.1.5";
       await loadHlsVersion(version);
+
+      if (!window.Hls || !Hls.isSupported()) {
+        nowChannel.textContent = "❌ HLS.js not supported or failed to load.";
+        return;
+      }
+
       const hls = new Hls();
       hls.loadSource(channel.url);
       hls.attachMedia(video);
@@ -304,10 +308,11 @@ async function playChannel(channel) {
       video.src = channel.url;
       await video.play();
     }
+    nowChannel.textContent = `Now Playing: ${channel.name}`;
   } catch (err) {
+    console.error("Playback error:", err);
     nowChannel.textContent = "⚠️ Video playback error.";
   }
-  nowChannel.textContent = `Now Playing: ${channel.name}`;
 }
 
 function scrollElement(id, amount) {
@@ -339,19 +344,15 @@ window.addEventListener('load', async () => {
   if (!savedUser || !savedSession) return;
   const snapshot = await db.ref('users/' + savedUser).once('value');
   if (!snapshot.exists()) {
-    localStorage.clear();
-    return;
+    localStorage.clear(); return;
   }
   const data = snapshot.val();
   const today = new Date().toISOString().split("T")[0];
   const isExpired = data.devices?.expiration < today;
   const devices = data.devices || {};
-  const activeSessions = Object.keys(devices).filter(key =>
-    !["password", "expiration", "playlist", "status"].includes(key)
-  );
+  const activeSessions = Object.keys(devices).filter(k => !["password","expiration","playlist","status"].includes(k));
   if (isExpired || (!devices[savedSession] && activeSessions.length >= data.device_limit)) {
-    localStorage.clear();
-    return;
+    localStorage.clear(); return;
   }
 
   loginSection.style.display = 'none';
@@ -361,6 +362,6 @@ window.addEventListener('load', async () => {
     db.ref(`users/${savedUser}/devices/${savedSession}`).set(true);
   }, 60000);
 });
-</script>
+        </script>
 </body>
 </html>
