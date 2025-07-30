@@ -2,413 +2,304 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <link rel="icon" type="image/x-icon" href="Jinwoo.png" />
-  <title>Shakzz TV</title>
+  <title>NZM IPTV</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-  <!-- JW Player -->
-  <script src="https://ssl.p.jwpcdn.com/player/v/8.36.6/jwplayer.js"></script>
-  <script>jwplayer.key = "ITWMv7t88JGzI0xPwW8I0+LveiXX9SWbfdmt0ArUSyc=";</script>
-
-  <!-- Font Awesome -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
-
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600&display=swap" rel="stylesheet" />
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
   <style>
-    :root {
-      --bg-color: #111;
-      --text-color: white;
-      --accent-color: royalblue;
-    }
-
-    * {
-      box-sizing: border-box;
-      transition: background 0.3s, color 0.3s;
-    }
-
-    html, body {
-      margin: 0;
-      padding: 0;
-      background-color: var(--bg-color);
-      color: var(--text-color);
-      font-family: "Segoe UI", sans-serif;
-      height: 100%;
-      display: flex;
-      flex-direction: column;
-      overflow-x: hidden;
-    }
-
-    body {
-      overflow-y: hidden;
-    }
-
-    .top-nav {
-      width: 100%;
-      background-color: #000;
-      border-bottom: 1px solid white;
-      padding: 10px 20px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      position: sticky;
-      top: 0;
-      z-index: 100;
-      flex-wrap: wrap;
-    }
-
-    .nav-logo {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      cursor: pointer;
-    }
-
-    .nav-logo img {
-      height: 40px;
-    }
-
-    .logo-text {
-      font-size: 1.5em;
-      color: var(--accent-color);
-      font-weight: bold;
-    }
-
-    .nav-links {
-      display: flex;
-      align-items: center;
-      gap: 20px;
-    }
-
-    .nav-links a {
-      color: #ccc;
-      text-decoration: none;
-      font-weight: bold;
-      transition: color 0.3s;
-    }
-
-    .nav-links a:hover {
-      color: var(--accent-color);
-    }
-
-    main {
-      flex: 1;
-      display: flex;
-      overflow: hidden;
-    }
-
-    .sidebar {
-      width: 300px;
-      background-color: #222;
-      border-right: 2px solid #222;
-      display: flex;
-      flex-direction: column;
-      padding: 10px 0;
-      overflow: hidden;
-      height: 100%;
-    }
-
-    .search-container {
-      position: relative;
-      display: flex;
-      align-items: center;
-      margin: 0 10px 8px 10px;
-    }
-
-    .search-container input {
-      flex: 1;
-      padding: 8px 30px 8px 8px;
-      border-radius: 6px;
-      border: 1px solid #2f2f2f;
-      background-color: var(--bg-color);
-      color: var(--text-color);
-      width: 100%;
-    }
-
-    .clear-btn {
-      position: absolute;
-      top: 42%;
-      right: 12px;
-      transform: translateY(-50%);
-      font-size: 1.5em;
-      color: #666;
-      cursor: pointer;
-      display: none;
-      user-select: none;
-      line-height: 8;
-      z-index: 10;
-    }
-
-    .channel-list {
-      overflow-y: auto;
-      flex: 1;
-      padding: 0 10px;
-    }
-
-    .channel-button {
-      width: 100%;
-      padding: 10px;
-      margin: 5px 0;
-      background-color: #333;
-      border: 1px solid #2f2f2f;
-      border-radius: 8px;
-      color: white;
-      display: flex;
-      align-items: center;
-      gap: 15px;
-      cursor: pointer;
-      transition: background-color 0.3s;
-    }
-
-    .channel-button:hover {
-      background-color: #222;
-    }
-
-    .channel-logo {
-      width: 50px;
-      height: 50px;
-      object-fit: contain;
-      border-radius: 6px;
-      background-color: white;
-    }
-
-    .main {
-      flex-grow: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 10px;
-    }
-
-    #channelInfo {
-      display: none;
-    }
-
-    #video {
-      width: 100%;
-      height: 100%;
-    }
-
-    .jwplayer {
-      width: 100% !important;
-      height: 100% !important;
-      aspect-ratio: unset !important;
-      object-fit: fill !important;
-    }
-
-    #channelCount {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      gap: 8px;
-      padding: 10px;
-      font-weight: bold;
-      text-align: center;
-    }
-
-    #channelCountText,
-    #channelCount i {
-      animation: rgbText 3s linear infinite;
-      font-size: 1.2rem;
-    }
-
-    @keyframes rgbText {
-      0% { color: red; }
-      25% { color: orange; }
-      50% { color: lime; }
-      75% { color: cyan; }
-      100% { color: magenta; }
-    }
-
-    .contact-footer {
-      background-color: #000;
-      padding: 10px 20px;
-      color: #ccc;
-      border-top: 1px solid white;
-      width: 100%;
-      font-size: 0.85em;
-    }
-
-    .footer-content {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-    }
-
-    .left-section {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-size: 1.2em;
-      flex-wrap: wrap;
-    }
-
-    .right-section {
-      font-size: 0.9em;
-      color: #555;
-    }
-
-    .social-link {
-      color: #ccc;
-      text-decoration: none !important;
-    }
-
-    .social-link:hover {
-      color: var(--accent-color);
-    }
-
-    @media (max-width: 768px) {
-      main {
-        flex-direction: column;
-      }
-
-      .sidebar {
-        width: 100%;
-        border-right: none;
-        border-bottom: 2px solid #333;
-        max-height: 50vh;
-      }
-
-      .top-nav {
-        flex-direction: row;
-        justify-content: space-between;
-        padding: 10px;
-      }
-
-      .nav-links {
-        flex-direction: row;
-        gap: 15px;
-      }
-
-      .nav-logo img {
-        height: 30px;
-      }
-
-      .footer-content {
-        flex-direction: column;
-        align-items: center;
-        text-align: center;
-        gap: 10px;
-      }
-
-      .left-section, .right-section {
-        justify-content: center;
-      }
-
-      #video {
-        order: -1;
-        width: 100%;
-        max-height: 300px;
-        aspect-ratio: 16 / 9;
-      }
-    }
+    * { box-sizing: border-box; font-family: 'Orbitron', sans-serif; }
+    body, html { margin: 0; padding: 0; height: 100%; background: black; color: white; }
+    #loginSection { display: flex; justify-content: center; align-items: center; height: 100vh; background: url('https://i.imgur.com/yeftKeD.jpeg') no-repeat center center fixed; background-size: cover; }
+    .login-box { background: rgba(0,0,0,0.6); padding: 30px 40px; border-radius: 12px; backdrop-filter: blur(8px); text-align: center; }
+    .login-box input { display: block; width: 250px; margin: 10px auto; padding: 10px; border-radius: 6px; border: none; }
+    .login-box button { background: hotpink; border: none; color: white; font-weight: bold; padding: 10px 25px; border-radius: 6px; cursor: pointer; }
+    #iptvSection { display: none; min-height: 100vh; background: url('https://i.imgur.com/yeftKeD.jpeg') no-repeat center center fixed; background-size: cover; padding: 10px; }
+    .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+    .logout-btn { background: crimson; padding: 8px 16px; border-radius: 6px; cursor: pointer; }
+    video { width: 100%; border-radius: 10px; background: black; }
+    #nowChannel { text-align: center; font-weight: bold; margin: 10px 0; }
+    #search { width: 100%; padding: 10px; border-radius: 8px; margin: 10px 0; font-size: 16px; }
+    .carousel, #channelList { display: flex; overflow-x: auto; gap: 8px; padding: 10px 0; }
+    .carousel button { background: #222; color: white; border: none; padding: 6px 12px; border-radius: 20px; white-space: nowrap; }
+    .carousel button.active { background: hotpink; }
+    .channel { flex: 0 0 48%; background: rgba(255,255,255,0.1); border-radius: 10px; text-align: center; padding: 10px; }
+    .channel img { width: 100%; max-height: 100px; object-fit: contain; }
+    #reconnecting { text-align: center; color: red; display: none; margin: 5px 0; }
+    .scroll-buttons { display: flex; justify-content: space-between; align-items: center; margin: 5px 0; }
+    .scroll-buttons button { background: hotpink; border: none; padding: 6px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; }
   </style>
 </head>
 <body>
-  <nav class="top-nav">
-    <div class="nav-logo" onclick="location.reload()">
-      <img src="Jinwoo.png" alt="Logo" />
-      <span class="logo-text">Shakzz TV</span>
-    </div>
-    <div class="nav-links">
-      <a href="https://www.youtube.com/watch?v=dQw4w9WgXcQ" target="_blank">Want the channels for OTT?</a>
-    </div>
-  </nav>
-
-  <main>
-    <div class="main">
-      <div id="video"></div>
-      <div id="channelInfo"></div>
-    </div>
-
-    <div class="sidebar">
-      <div class="search-container">
-        <input type="text" id="search" placeholder="Search channel..." />
-        <span id="clearSearch" class="clear-btn">&times;</span>
-      </div>
-      <div class="channel-list" id="channelList"></div>
-      <div id="channelCount">
-        <i class="fas fa-tv"></i>
-        <span id="channelCountText">0 channels found</span>
-      </div>
-    </div>
-  </main>
-
-  <footer class="contact-footer">
-    <div class="footer-content">
-      <div class="left-section">
-        Contact Me:
-        <a href="https://facebook.com/profile.php?id=100083316728361" target="_blank" class="social-link"><i class="fab fa-facebook"></i></a>
-        <a href="https://youtube.com/@Shakzz05" target="_blank" class="social-link"><i class="fab fa-youtube"></i></a>
-        <a href="https://mail.google.com/mail/?view=cm&to=shakzz05.business@gmail.com" target="_blank" rel="noopener noreferrer" class="social-link"><i class="fas fa-envelope"></i></a>
-        <noscript><a href="mailto:shakzz05.business@gmail.com" class="social-link"><i class="fas fa-envelope"></i></a></noscript>
-      </div>
-      <div class="right-section">© All rights reserved 2025</div>
-    </div>
-  </footer>
-
-  <script>
-    const searchInput = document.getElementById('search');
-    const clearBtn = document.getElementById('clearSearch');
-
-    searchInput.addEventListener('input', () => {
-      clearBtn.style.display = searchInput.value ? 'block' : 'none';
-    });
-
-    clearBtn.addEventListener('click', () => {
-      searchInput.value = '';
-      clearBtn.style.display = 'none';
-      searchInput.dispatchEvent(new Event('input'));
-    });
-  </script>
-
-  <!-- Your updated cutie.js should handle all logic -->
-  <script src="cutie.js"></script>
+<div id="loginSection">
+  <div class="login-box">
+    <h2>NZM IPTV Login</h2>
+    <input type="text" id="email" placeholder="Username">
+    <input type="password" id="password" placeholder="Password">
+    <button id="loginBtn">Login</button>
+    <p id="loginError" style="color:red;"></p>
+  </div>
+</div>
+<div id="iptvSection">
+  <div class="header">
+    <img src="logo.png" alt="Logo" style="width:60px;height:60px;border-radius:50%;">
+    <div class="logout-btn" onclick="logout()">Logout</div>
+  </div>
+  <video id="player" controls autoplay></video>
+  <div id="reconnecting">Reconnecting stream...</div>
+  <div id="nowChannel">Now Playing</div>
+  <input type="text" id="search" placeholder="Search channels...">
+  <div class="scroll-buttons">
+    <button onclick="scrollElement('categoryList', -200)">⏪</button>
+    <span>Categories</span>
+    <button onclick="scrollElement('categoryList', 200)">⏩</button>
+  </div>
+  <div id="categoryList" class="carousel"></div>
+  <div id="channelList" class="carousel"></div>
+  <div class="scroll-buttons">
+    <button onclick="scrollElement('channelList', -300)">⏪</button>
+    <span>Channels</span>
+    <button onclick="scrollElement('channelList', 300)">⏩</button>
+  </div>
+</div>
 
 <script>
-document.addEventListener('DOMContentLoaded', () => {
-  const listContainer = document.getElementById('channelList');
-  const searchInput = document.getElementById('search');
-  const countText = document.getElementById('channelCountText');
+const firebaseConfig = {
+  apiKey: "AIzaSyDssixgarRWvLMKtUsX7HLEt8uPGmNIRak",
+  authDomain: "iptv-login-3204b.firebaseapp.com",
+  databaseURL: "https://iptv-login-3204b-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "iptv-login-3204b",
+  storageBucket: "iptv-login-3204b.appspot.com",
+  messagingSenderId: "464216999882",
+  appId: "1:464216999882:web:d7e1f7d44adacd8b46b133"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
 
-  function renderChannels(filter = "") {
-    const keys = Object.keys(window.channels);
-    listContainer.innerHTML = "";
+const loginSection = document.getElementById('loginSection');
+const iptvSection = document.getElementById('iptvSection');
+const video = document.getElementById('player');
+const search = document.getElementById('search');
+const categoryList = document.getElementById('categoryList');
+const channelList = document.getElementById('channelList');
+const nowChannel = document.getElementById('nowChannel');
+const reconnecting = document.getElementById('reconnecting');
 
-    const filtered = keys.filter(key => key.toLowerCase().includes(filter.toLowerCase()));
-    countText.textContent = `${filtered.length} channels found`;
+let sessionId = localStorage.getItem('sessionId') || crypto.randomUUID();
+localStorage.setItem('sessionId', sessionId);
 
-    filtered.forEach(key => {
-      const channel = window.channels[key];
-      const btn = document.createElement('div');
-      btn.className = "channel-button";
-      btn.innerHTML = `
-        <img src="${channel.logo}" class="channel-logo" />
-        <span>${channel.name}</span>
-      `;
-      btn.onclick = () => playChannel(channel);
-      listContainer.appendChild(btn);
-    });
+let channels = [], currentCategory = 'All', freezeCheck, lastTime = 0;
+
+document.getElementById("loginBtn").addEventListener("click", async () => {
+  const username = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value.trim();
+  const loginError = document.getElementById("loginError");
+  if (!username || !password) return loginError.textContent = "Both fields required.";
+
+  try {
+    const userRef = db.ref('users/' + username);
+    const snapshot = await userRef.once('value');
+    if (!snapshot.exists()) return loginError.textContent = "User not found.";
+    const data = snapshot.val();
+
+    if (data.password !== password) return loginError.textContent = "Incorrect password.";
+    const today = new Date().toISOString().split("T")[0];
+    if (data.expiration < today) return loginError.textContent = "Account expired.";
+    const devices = data.devices || {};
+    if (!devices[sessionId] && Object.keys(devices).length >= data.device_limit) {
+      return loginError.textContent = "Device limit reached.";
+    }
+
+    await db.ref(`users/${username}/devices/${sessionId}`).set(true);
+    localStorage.setItem('username', username);
+    loginSection.style.display = 'none';
+    iptvSection.style.display = 'block';
+    loadPlaylist();
+
+    setInterval(() => {
+      db.ref(`users/${username}/devices/${sessionId}`).set(true);
+    }, 60000);
+  } catch (e) {
+    loginError.textContent = "Login error: " + e.message;
+  }
+});
+
+function logout() {
+  const user = localStorage.getItem("username");
+  if (user) {
+    db.ref('users/' + user + '/devices/' + sessionId).remove();
+    localStorage.removeItem("username");
+  }
+  video.pause();
+  video.src = "";
+  video.load();
+  loginSection.style.display = 'flex';
+  iptvSection.style.display = 'none';
+}
+
+const playlistURLs = [
+  { url: "https://raw.githubusercontent.com/PRENDLYMADAPAKER/ANG-KALAT-MO/main/UDPTV.m3u", group: "UDPTV Live Streams" },
+  { url: "https://raw.githubusercontent.com/PRENDLYMADAPAKER/ANG-KALAT-MO/main/TheTVApp.m3u", group: "TheTVApp" }
+];
+
+async function loadPlaylist() {
+  try {
+    const allData = await Promise.all(
+      playlistURLs.map(async ({ url, group }) => {
+        const res = await fetch(url);
+        const text = await res.text();
+        return parseM3U(text, group);
+      })
+    );
+    channels = allData.flat();
+    renderCategories();
+    renderChannels();
+  } catch {
+    nowChannel.textContent = "❌ Failed to load playlists.";
+  }
+}
+
+function parseM3U(data, overrideGroup = "") {
+  const lines = data.split("\n");
+  const items = [];
+  let temp = {};
+  for (let line of lines) {
+    if (line.startsWith("#EXTINF")) {
+      const name = line.match(/,(.*)/)?.[1] || 'Unknown';
+      const logo = line.match(/tvg-logo="(.*?)"/)?.[1] || '';
+      const group = overrideGroup || line.match(/group-title="(.*?)"/)?.[1] || 'Other';
+      temp = { name, logo, group };
+    } else if (line.startsWith("http")) {
+      temp.url = line.trim();
+      items.push(temp);
+      temp = {};
+    }
+  }
+  return items;
+}
+
+function renderCategories() {
+  const groups = ['All', ...new Set(channels.map(c => c.group))];
+  categoryList.innerHTML = '';
+  groups.forEach(group => {
+    const btn = document.createElement('button');
+    btn.textContent = group;
+    if (group === currentCategory) btn.classList.add('active');
+    btn.onclick = () => {
+      currentCategory = group;
+      document.querySelectorAll('.carousel button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderChannels();
+    };
+    categoryList.appendChild(btn);
+  });
+}
+
+function renderChannels() {
+  const keyword = search.value.toLowerCase();
+  const filtered = channels.filter(c =>
+    (currentCategory === 'All' || c.group === currentCategory) &&
+    c.name.toLowerCase().includes(keyword)
+  );
+  channelList.innerHTML = '';
+  filtered.forEach(c => {
+    const div = document.createElement('div');
+    div.className = 'channel';
+    div.innerHTML = `<img src="${c.logo}" onerror="this.src='https://via.placeholder.com/150x70?text=No+Logo'"><p>${c.name}</p>`;
+    div.onclick = () => playChannel(c);
+    channelList.appendChild(div);
+  });
+}
+
+async function loadHlsVersion(version) {
+  return new Promise((resolve, reject) => {
+    const existing = document.getElementById("hlsjs-dynamic");
+    if (existing) existing.remove();
+    const script = document.createElement("script");
+    script.id = "hlsjs-dynamic";
+    script.src = `https://cdn.jsdelivr.net/npm/hls.js@${version}`;
+    script.onload = resolve;
+    script.onerror = reject;
+    document.head.appendChild(script);
+  });
+}
+
+async function playChannel(channel) {
+  const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  video.pause();
+  video.src = "";
+  video.load();
+
+  try {
+    if (!isMobile && channel.url.endsWith(".m3u8")) {
+      const version = channel.group === "UDPTV Live Streams" ? "1.4.12" : "1.1.5";
+      await loadHlsVersion(version);
+      const hls = new Hls();
+      hls.loadSource(channel.url);
+      hls.attachMedia(video);
+      hls.on(Hls.Events.MANIFEST_PARSED, () => video.play());
+      hls.on(Hls.Events.ERROR, () => {
+        nowChannel.textContent = "⚠️ Failed to play channel.";
+      });
+    } else {
+      video.src = channel.url;
+      await video.play();
+    }
+  } catch (err) {
+    nowChannel.textContent = "⚠️ Video playback error.";
   }
 
-  function playChannel(channel) {
-    jwplayer("video").setup({
-      file: channel.manifestUri,
-      type: channel.type === "hls" ? "hls" : "dash",
-      image: channel.logo,
-      autostart: true,
-      drm: channel.type === "clearkey" || channel.type === "widevine" ? {
-        [channel.type]: channel.type === "widevine"
-          ? { url: channel.licenseServerUri }
-          : { keyId: channel.keyId, key: channel.key }
-      } : undefined
-    });
+  nowChannel.textContent = `Now Playing: ${channel.name}`;
+}
+
+function scrollElement(id, amount) {
+  const el = document.getElementById(id);
+  if (el) el.scrollBy({ left: amount, behavior: 'smooth' });
+}
+
+function startFreezeMonitor() {
+  clearInterval(freezeCheck);
+  freezeCheck = setInterval(() => {
+    if (!video.paused && !video.ended) {
+      if (video.currentTime === lastTime) {
+        reconnecting.style.display = 'block';
+        video.load(); video.play();
+      } else {
+        reconnecting.style.display = 'none';
+      }
+      lastTime = video.currentTime;
+    }
+  }, 5000);
+}
+
+video.addEventListener('play', startFreezeMonitor);
+search.addEventListener('input', renderChannels);
+
+window.addEventListener('load', async () => {
+  const savedUser = localStorage.getItem("username");
+  const savedSession = localStorage.getItem("sessionId");
+  if (!savedUser || !savedSession) return;
+  const snapshot = await db.ref('users/' + savedUser).once('value');
+  if (!snapshot.exists()) {
+    localStorage.clear();
+    return;
+  }
+  const data = snapshot.val();
+  const today = new Date().toISOString().split("T")[0];
+  const isExpired = data.expiration < today;
+  const devices = data.devices || {};
+  if (isExpired || (!devices[savedSession] && Object.keys(devices).length >= data.device_limit)) {
+    localStorage.clear();
+    return;
   }
 
-  searchInput.addEventListener('input', e => renderChannels(e.target.value));
-  renderChannels();
+  loginSection.style.display = 'none';
+  iptvSection.style.display = 'block';
+  loadPlaylist();
+  setInterval(() => {
+    db.ref(`users/${savedUser}/devices/${savedSession}`).set(true);
+  }, 60000);
 });
 </script>
-
 </body>
 </html>
