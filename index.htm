@@ -1,10 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>IPTV PREMIUM</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.6.0/shaka-player.compiled.min.js"></script>
+  <script src="jwplayer.js"></script>
   <style>
     body {
       margin: 0;
@@ -42,10 +43,17 @@
       justify-content: center;
       align-items: center;
       background-color: #000;
+      position: relative;
     }
-    video {
+    video, #jwplayerDiv {
       width: 100%;
       max-height: 100%;
+    }
+    #jwplayerDiv {
+      position: absolute;
+      top: 0;
+      left: 0;
+      display: none;
     }
   </style>
 </head>
@@ -53,34 +61,76 @@
   <div class="sidebar" id="channelList"></div>
   <div class="player-container">
     <video id="video" controls autoplay></video>
+    <div id="jwplayerDiv"></div>
   </div>
 
   <script>
     const channels = [
       {
         name: "PBA Rush",
-        logo: "https://play-lh.googleusercontent.com/dE1QpN0tXPFG1k2X0tRJ7sUY4VPyVqMQEvM9c_ZYuWtaqk4CSAKZtMNIsfKXNm1Z_Lk=s200-rw",
+        logo: "https://upload.wikimedia.org/wikipedia/en/c/cd/PBA_Rush_logo.png",
         manifest: "https://mpdrr.herokuapp.com/iptvrr/pbarush.mpd",
         licenseUrl: "https://mpdrr.herokuapp.com/WIDEVINE/getlicense.php?id=1"
       }
-      // You can add more here
     ];
 
     const listContainer = document.getElementById('channelList');
     const video = document.getElementById('video');
-    const player = new shaka.Player(video);
+    const jwDiv = document.getElementById('jwplayerDiv');
 
-    function loadChannel(channel) {
-      player.configure({
-        drm: {
-          servers: {
-            'com.widevine.alpha': channel.licenseUrl
+    async function isWidevineSupported() {
+      try {
+        await navigator.requestMediaKeySystemAccess("com.widevine.alpha", [{
+          initDataTypes: ["cenc"],
+          videoCapabilities: [{ contentType: "video/mp4; codecs=\"avc1.42E01E\"" }]
+        }]);
+        return true;
+      } catch (e) {
+        return false;
+      }
+    }
+
+    async function loadSmartPlayer(channel) {
+      const isSupported = await isWidevineSupported();
+      if (isSupported && shaka.Player.isBrowserSupported()) {
+        jwDiv.style.display = 'none';
+        video.style.display = 'block';
+        const player = new shaka.Player(video);
+        player.configure({
+          drm: {
+            servers: {
+              'com.widevine.alpha': channel.licenseUrl
+            }
           }
+        });
+        try {
+          await player.load(channel.manifest);
+          console.log("Shaka Player is playing");
+        } catch (e) {
+          console.error("Shaka failed, fallback to JWPlayer");
+          fallbackToJW(channel);
         }
+      } else {
+        fallbackToJW(channel);
+      }
+    }
+
+    function fallbackToJW(channel) {
+      video.style.display = 'none';
+      jwDiv.style.display = 'block';
+      jwplayer("jwplayerDiv").setup({
+        file: channel.manifest,
+        type: "dash",
+        drm: {
+          widevine: {
+            url: channel.licenseUrl
+          }
+        },
+        image: "https://via.placeholder.com/1280x720?text=IPTV+PREMIUM",
+        width: "100%",
+        aspectratio: "16:9"
       });
-      player.load(channel.manifest).then(() => {
-        console.log(`Playing: ${channel.name}`);
-      }).catch(console.error);
+      console.log("JWPlayer is playing");
     }
 
     function renderChannels() {
@@ -88,18 +138,14 @@
         const div = document.createElement('div');
         div.className = 'channel';
         div.innerHTML = `<img src="${channel.logo}" alt=""/><span>${channel.name}</span>`;
-        div.onclick = () => loadChannel(channel);
+        div.onclick = () => loadSmartPlayer(channel);
         listContainer.appendChild(div);
       });
     }
 
     document.addEventListener('DOMContentLoaded', async () => {
-      if (!shaka.Player.isBrowserSupported()) {
-        alert('Shaka Player is not supported on this browser.');
-        return;
-      }
       renderChannels();
-      loadChannel(channels[0]);
+      loadSmartPlayer(channels[0]);
     });
   </script>
 </body>
