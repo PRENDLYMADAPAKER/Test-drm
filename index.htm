@@ -7,8 +7,6 @@
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600&display=swap" rel="stylesheet" />
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-  <script src="https://cdn.jsdelivr.net/npm/hls.js@1.1.5/dist/hls.min.js" defer></script>
   <style>
     * { box-sizing: border-box; font-family: 'Orbitron', sans-serif; }
     body, html { margin: 0; padding: 0; height: 100%; background: black; color: white; }
@@ -139,20 +137,29 @@ function logout() {
   iptvSection.style.display = 'none';
 }
 
+const playlistURLs = [
+  { url: "https://raw.githubusercontent.com/PRENDLYMADAPAKER/ANG-KALAT-MO/main/UDPTV.m3u", group: "UDPTV Live Streams" },
+  { url: "https://raw.githubusercontent.com/PRENDLYMADAPAKER/ANG-KALAT-MO/main/TheTVApp.m3u", group: "TheTVApp" }
+];
+
 async function loadPlaylist() {
-  const playlistURL = "https://raw.githubusercontent.com/PRENDLYMADAPAKER/ANG-KALAT-MO/main/IPTVPREMIUM.m3u";
   try {
-    const res = await fetch(playlistURL);
-    const text = await res.text();
-    channels = parseM3U(text);
+    const allData = await Promise.all(
+      playlistURLs.map(async ({ url, group }) => {
+        const res = await fetch(url);
+        const text = await res.text();
+        return parseM3U(text, group);
+      })
+    );
+    channels = allData.flat();
     renderCategories();
     renderChannels();
   } catch {
-    nowChannel.textContent = "Failed to load playlist.";
+    nowChannel.textContent = "❌ Failed to load playlists.";
   }
 }
 
-function parseM3U(data) {
+function parseM3U(data, overrideGroup = "") {
   const lines = data.split("\n");
   const items = [];
   let temp = {};
@@ -160,7 +167,7 @@ function parseM3U(data) {
     if (line.startsWith("#EXTINF")) {
       const name = line.match(/,(.*)/)?.[1] || 'Unknown';
       const logo = line.match(/tvg-logo="(.*?)"/)?.[1] || '';
-      const group = line.match(/group-title="(.*?)"/)?.[1] || 'Other';
+      const group = overrideGroup || line.match(/group-title="(.*?)"/)?.[1] || 'Other';
       temp = { name, logo, group };
     } else if (line.startsWith("http")) {
       temp.url = line.trim();
@@ -225,7 +232,7 @@ async function playChannel(channel) {
 
   try {
     if (!isMobile && channel.url.endsWith(".m3u8")) {
-      const version = channel.group === "UDPTV Live Streams" ? "latest" : "1.1.5";
+      const version = channel.group === "UDPTV Live Streams" ? "1.4.12" : "1.1.5";
       await loadHlsVersion(version);
       const hls = new Hls();
       hls.loadSource(channel.url);
