@@ -5,7 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>IPTV PREMIUM</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.6.0/shaka-player.compiled.min.js"></script>
-  <script src="jwplayer.js"></script>
+  <!-- Official JW Player -->
+  <script src="https://ssl.p.jwpcdn.com/player/v/8.36.6/jwplayer.js"></script>
+  <script>jwplayer.key = "ITWMv7t88JGzI0xPwW8I0+LveiXX9SWbfdmt0ArUSyc=";</script>
+  <script src="pogi.js"></script>
   <style>
     body {
       margin: 0;
@@ -65,15 +68,6 @@
   </div>
 
   <script>
-    const channels = [
-      {
-        name: "PBA Rush",
-        logo: "https://upload.wikimedia.org/wikipedia/en/c/cd/PBA_Rush_logo.png",
-        manifest: "https://mpdrr.herokuapp.com/iptvrr/pbarush.mpd",
-        licenseUrl: "https://mpdrr.herokuapp.com/WIDEVINE/getlicense.php?id=1"
-      }
-    ];
-
     const listContainer = document.getElementById('channelList');
     const video = document.getElementById('video');
     const jwDiv = document.getElementById('jwplayerDiv');
@@ -92,49 +86,73 @@
 
     async function loadSmartPlayer(channel) {
       const isSupported = await isWidevineSupported();
+      console.log("Widevine support:", isSupported);
+
       if (isSupported && shaka.Player.isBrowserSupported()) {
         jwDiv.style.display = 'none';
         video.style.display = 'block';
+
         const player = new shaka.Player(video);
-        player.configure({
-          drm: {
-            servers: {
-              'com.widevine.alpha': channel.licenseUrl
+
+        if (channel.type === 'clearkey') {
+          player.configure({ drm: { clearKeys: channel.clearkey } });
+        } else {
+          player.configure({
+            drm: {
+              servers: {
+                'com.widevine.alpha': channel.licenseServerUri
+              }
             }
-          }
-        });
+          });
+        }
+
         try {
-          await player.load(channel.manifest);
+          await player.load(channel.manifestUri);
           console.log("Shaka Player is playing");
         } catch (e) {
-          console.error("Shaka failed, fallback to JWPlayer");
-          fallbackToJW(channel);
+          console.error("Shaka failed:", e);
+          if (channel.type === 'widevine') fallbackToJW(channel);
         }
       } else {
-        fallbackToJW(channel);
+        if (channel.type === 'widevine') fallbackToJW(channel);
       }
     }
 
     function fallbackToJW(channel) {
       video.style.display = 'none';
       jwDiv.style.display = 'block';
+      console.log("Using JWPlayer fallback");
+
+      if (typeof jwplayer !== 'function') {
+        console.error("JWPlayer not loaded properly.");
+        return;
+      }
+
       jwplayer("jwplayerDiv").setup({
-        file: channel.manifest,
+        file: channel.manifestUri,
         type: "dash",
         drm: {
           widevine: {
-            url: channel.licenseUrl
+            url: channel.licenseServerUri
           }
         },
-        image: "https://via.placeholder.com/1280x720?text=IPTV+PREMIUM",
         width: "100%",
-        aspectratio: "16:9"
+        aspectratio: "16:9",
+        image: "https://via.placeholder.com/1280x720?text=IPTV+PREMIUM",
+        events: {
+          error: function (err) {
+            console.error("JWPLAYER ERROR:", err);
+          },
+          setupError: function (err) {
+            console.error("SETUP ERROR:", err);
+          }
+        }
       });
-      console.log("JWPlayer is playing");
     }
 
     function renderChannels() {
-      channels.forEach(channel => {
+      Object.keys(channels).forEach(key => {
+        const channel = channels[key];
         const div = document.createElement('div');
         div.className = 'channel';
         div.innerHTML = `<img src="${channel.logo}" alt=""/><span>${channel.name}</span>`;
@@ -145,7 +163,8 @@
 
     document.addEventListener('DOMContentLoaded', async () => {
       renderChannels();
-      loadSmartPlayer(channels[0]);
+      const defaultChannelKey = Object.keys(channels)[0];
+      loadSmartPlayer(channels[defaultChannelKey]);
     });
   </script>
 </body>
