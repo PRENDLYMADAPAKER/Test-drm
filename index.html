@@ -31,205 +31,230 @@
   </style>
 </head>
 <body>
-
-<!-- Login Section -->
-<div id="loginSection">
-  <div class="login-box">
-    <h2>NZM IPTV Login</h2>
-    <input type="text" id="email" placeholder="Username" />
-    <input type="password" id="password" placeholder="Password" />
-    <button id="loginBtn">Login</button>
-    <p id="loginError" style="color:red;"></p>
+  <div id="loginSection">
+    <div class="login-box">
+      <h2>NZM IPTV Login</h2>
+      <input type="text" id="email" placeholder="Username">
+      <input type="password" id="password" placeholder="Password">
+      <button id="loginBtn">Login</button>
+      <p id="loginError" style="color:red;"></p>
+    </div>
   </div>
-</div>
 
-<!-- IPTV Interface -->
-<div id="iptvSection">
-  <div class="header">
-    <img src="logo.png" alt="Logo" style="width:60px;height:60px;border-radius:50%;" />
-    <div class="logout-btn" onclick="logout()">Logout</div>
+  <div id="iptvSection" style="display:none">
+    <div class="header">
+      <img src="logo.png" style="width:60px;height:60px;border-radius:50%;" />
+      <div class="logout-btn" onclick="logout()">Logout</div>
+    </div>
+    <video id="player" controls autoplay></video>
+    <div id="nowChannel">Now Playing</div>
+    <input type="text" id="search" placeholder="Search channels...">
+    <div id="categoryList" class="carousel"></div>
+    <div id="channelList" class="carousel"></div>
   </div>
-  <video id="player" controls autoplay></video>
-  <div id="reconnecting">Reconnecting stream...</div>
-  <div id="nowChannel">Now Playing</div>
-  <input type="text" id="search" placeholder="Search channels..." />
-  <div class="scroll-buttons">
-    <button onclick="scrollElement('categoryList', -200)">⏪</button>
-    <span>Categories</span>
-    <button onclick="scrollElement('categoryList', 200)">⏩</button>
-  </div>
-  <div id="categoryList" class="carousel"></div>
-  <div id="channelList" class="carousel"></div>
-  <div class="scroll-buttons">
-    <button onclick="scrollElement('channelList', -300)">⏪</button>
-    <span>Channels</span>
-    <button onclick="scrollElement('channelList', 300)">⏩</button>
-  </div>
-</div>
 
-<script>
-// Firebase Config
-const firebaseConfig = {
-  apiKey: "AIzaSyDssixgarRWvLMKtUsX7HLEt8uPGmNIRak",
-  authDomain: "iptv-login-3204b.firebaseapp.com",
-  databaseURL: "https://iptv-login-3204b-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "iptv-login-3204b",
-  storageBucket: "iptv-login-3204b.appspot.com",
-  messagingSenderId: "464216999882",
-  appId: "1:464216999882:web:d7e1f7d44adacd8b46b133"
-};
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
-
-// Variables
-const loginSection = document.getElementById('loginSection');
-const iptvSection = document.getElementById('iptvSection');
-const video = document.getElementById('player');
-const search = document.getElementById('search');
-const channelList = document.getElementById('channelList');
-const categoryList = document.getElementById('categoryList');
-const nowChannel = document.getElementById('nowChannel');
-const reconnecting = document.getElementById('reconnecting');
-let channels = [], currentCategory = 'All';
-let sessionId = localStorage.getItem('sessionId') || crypto.randomUUID();
-localStorage.setItem('sessionId', sessionId);
-
-// Login
-loginBtn.addEventListener("click", async () => {
-  const username = email.value.trim();
-  const password = document.getElementById("password").value.trim();
-  const loginError = document.getElementById("loginError");
-  if (!username || !password) return loginError.textContent = "Both fields required.";
-
-  try {
-    const snapshot = await db.ref('users/' + username).once('value');
-    if (!snapshot.exists()) return loginError.textContent = "User not found.";
-    const data = snapshot.val();
-    const correctPw = data.devices?.password;
-    const exp = data.devices?.expiration;
-    const limit = data.device_limit || 1;
-    const devs = data.devices || {};
-
-    if (correctPw !== password) return loginError.textContent = "Incorrect password.";
-    const today = new Date().toISOString().split("T")[0];
-    if (exp && exp < today) return loginError.textContent = "Account expired.";
-
-    const active = Object.keys(devs).filter(k => !['password','expiration','playlist','status'].includes(k));
-    if (!devs[sessionId] && active.length >= limit) return loginError.textContent = "Device limit reached.";
-
-    await db.ref(`users/${username}/devices/${sessionId}`).set(true);
-    localStorage.setItem('username', username);
-    loginSection.style.display = 'none';
-    iptvSection.style.display = 'block';
-    loadPlaylist();
-  } catch (e) {
-    loginError.textContent = "Login error: " + e.message;
-  }
-});
-
-function logout() {
-  const user = localStorage.getItem("username");
-  if (user) {
-    db.ref('users/' + user + '/devices/' + sessionId).remove();
-    localStorage.removeItem("username");
-  }
-  loginSection.style.display = 'flex';
-  iptvSection.style.display = 'none';
-}
-
-// Load hardcoded dual playlist
-async function loadPlaylist() {
-  const urls = [
-    "https://raw.githubusercontent.com/PRENDLYMADAPAKER/ANG-KALAT-MO/main/TheTVApp.m3u",
-    "https://raw.githubusercontent.com/PRENDLYMADAPAKER/ANG-KALAT-MO/main/UDPTV.m3u"
-  ];
-  const contents = await Promise.all(urls.map(u => fetch(u).then(r => r.text())));
-  channels = [...parseM3U(contents[0]), ...parseM3U(contents[1])];
-  renderCategories();
-  renderChannels();
-}
-
-function parseM3U(data) {
-  const lines = data.split("\n"), items = [], temp = {};
-  for (let line of lines) {
-    if (line.startsWith("#EXTINF")) {
-      temp.name = line.match(/,(.*)/)?.[1] || 'Unknown';
-      temp.logo = line.match(/tvg-logo="(.*?)"/)?.[1] || '';
-      temp.group = line.match(/group-title="(.*?)"/)?.[1] || 'Other';
-    } else if (line.startsWith("http")) {
-      temp.url = line.trim();
-      items.push({...temp});
-    }
-  }
-  return items;
-}
-
-function renderCategories() {
-  const groups = ['All', ...new Set(channels.map(c => c.group))];
-  categoryList.innerHTML = '';
-  groups.forEach(group => {
-    const btn = document.createElement('button');
-    btn.textContent = group;
-    if (group === currentCategory) btn.classList.add('active');
-    btn.onclick = () => {
-      currentCategory = group;
-      document.querySelectorAll('.carousel button').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      renderChannels();
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDssixgarRWvLMKtUsX7HLEt8uPGmNIRak",
+      authDomain: "iptv-login-3204b.firebaseapp.com",
+      databaseURL: "https://iptv-login-3204b-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "iptv-login-3204b",
+      storageBucket: "iptv-login-3204b.appspot.com",
+      messagingSenderId: "464216999882",
+      appId: "1:464216999882:web:d7e1f7d44adacd8b46b133"
     };
-    categoryList.appendChild(btn);
-  });
-}
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
 
-function renderChannels() {
-  const keyword = search.value.toLowerCase();
-  const filtered = channels.filter(c =>
-    (currentCategory === 'All' || c.group === currentCategory) &&
-    c.name.toLowerCase().includes(keyword)
-  );
-  channelList.innerHTML = '';
-  filtered.forEach(c => {
-    const div = document.createElement('div');
-    div.className = 'channel';
-    div.innerHTML = `<img src="${c.logo}" onerror="this.src='https://via.placeholder.com/150x70?text=No+Logo'"><p>${c.name}</p>`;
-    div.onclick = () => playChannel(c);
-    channelList.appendChild(div);
-  });
-}
+    const loginSection = document.getElementById("loginSection");
+    const iptvSection = document.getElementById("iptvSection");
+    const video = document.getElementById("player");
+    const nowChannel = document.getElementById("nowChannel");
+    const search = document.getElementById("search");
+    const channelList = document.getElementById("channelList");
+    const categoryList = document.getElementById("categoryList");
 
-function loadHLS(versionUrl, callback) {
-  const script = document.createElement("script");
-  script.src = versionUrl;
-  script.onload = callback;
-  document.head.appendChild(script);
-}
+    let channels = [], currentCategory = "All";
+    let sessionId = localStorage.getItem('sessionId') || crypto.randomUUID();
+    localStorage.setItem('sessionId', sessionId);
 
-function playChannel(channel) {
-  nowChannel.textContent = `Now Playing: ${channel.name}`;
-  const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-  const hlsVer = channel.group === "TheTVApp"
-    ? "https://cdn.jsdelivr.net/npm/hls.js@1.1.5/dist/hls.min.js"
-    : "https://cdn.jsdelivr.net/npm/hls.js@latest";
+    const playlistSources = [
+      { url: "https://raw.githubusercontent.com/PRENDLYMADAPAKER/ANG-KALAT-MO/main/UDPTV.m3u", group: "UDPTV Live Streams", hlsVersion: "1.4.12" },
+      { url: "https://raw.githubusercontent.com/PRENDLYMADAPAKER/ANG-KALAT-MO/main/TheTVApp.m3u", group: "TheTVApp", hlsVersion: "1.1.5" }
+    ];
 
-  if (!isMobile && channel.url.endsWith(".m3u8")) {
-    loadHLS(hlsVer, () => {
-      const hls = new Hls();
-      hls.loadSource(channel.url);
-      hls.attachMedia(video);
-      hls.on(Hls.Events.MANIFEST_PARSED, () => video.play());
-      hls.on(Hls.Events.ERROR, () => nowChannel.textContent = "⚠️ Failed to play channel.");
+    document.getElementById("loginBtn").addEventListener("click", async () => {
+      const username = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value.trim();
+      const loginError = document.getElementById("loginError");
+
+      if (!username || !password) return loginError.textContent = "Both fields required.";
+
+      try {
+        const userRef = db.ref('users/' + username);
+        const snapshot = await userRef.once('value');
+        if (!snapshot.exists()) return loginError.textContent = "User not found.";
+
+        const data = snapshot.val();
+        const correctPassword = data.devices?.password;
+        const expiration = data.devices?.expiration;
+        const deviceLimit = data.device_limit || 1;
+        const devices = data.devices || {};
+
+        if (!correctPassword || correctPassword !== password) return loginError.textContent = "Incorrect password.";
+
+        const today = new Date().toISOString().split("T")[0];
+        if (expiration && expiration < today) return loginError.textContent = "Account expired.";
+
+        const activeSessions = Object.keys(devices).filter(key =>
+          !["password", "expiration", "playlist", "status"].includes(key)
+        );
+        if (!devices[sessionId] && activeSessions.length >= deviceLimit) return loginError.textContent = "Device limit reached.";
+
+        await db.ref(`users/${username}/devices/${sessionId}`).set(true);
+        localStorage.setItem("username", username);
+        loginSection.style.display = "none";
+        iptvSection.style.display = "block";
+        loadPlaylists();
+
+        setInterval(() => {
+          db.ref(`users/${username}/devices/${sessionId}`).set(true);
+        }, 60000);
+      } catch (err) {
+        loginError.textContent = "Login error: " + err.message;
+      }
     });
-  } else {
-    video.src = channel.url;
-    video.play().catch(() => nowChannel.textContent = "⚠️ Playback failed.");
-  }
-}
 
-function scrollElement(id, amt) {
-  const el = document.getElementById(id);
-  if (el) el.scrollBy({ left: amt, behavior: 'smooth' });
-}
-</script>
+    function logout() {
+      const user = localStorage.getItem("username");
+      if (user) db.ref('users/' + user + '/devices/' + sessionId).remove();
+      localStorage.removeItem("username");
+      loginSection.style.display = "flex";
+      iptvSection.style.display = "none";
+    }
 
+    async function loadPlaylists() {
+      try {
+        const loaded = await Promise.all(playlistSources.map(async ({ url, group, hlsVersion }) => {
+          const res = await fetch(url);
+          const text = await res.text();
+          return parseM3U(text, group, hlsVersion);
+        }));
+        channels = loaded.flat();
+        renderCategories();
+        renderChannels();
+      } catch {
+        nowChannel.textContent = "❌ Failed to load playlists.";
+      }
+    }
+
+    function parseM3U(data, overrideGroup, hlsVersion) {
+      const lines = data.split("\n");
+      const items = [];
+      let temp = {};
+      for (let line of lines) {
+        if (line.startsWith("#EXTINF")) {
+          const name = line.match(/,(.*)/)?.[1] || "Unknown";
+          const logo = line.match(/tvg-logo="(.*?)"/)?.[1] || "";
+          temp = { name, logo, group: overrideGroup, hlsVersion };
+        } else if (line.startsWith("http")) {
+          temp.url = line.trim();
+          items.push({ ...temp });
+          temp = {};
+        }
+      }
+      return items;
+    }
+
+    function renderCategories() {
+      const groups = ["All", ...new Set(channels.map(c => c.group))];
+      categoryList.innerHTML = '';
+      groups.forEach(group => {
+        const btn = document.createElement("button");
+        btn.textContent = group;
+        if (group === currentCategory) btn.classList.add("active");
+        btn.onclick = () => {
+          currentCategory = group;
+          document.querySelectorAll(".carousel button").forEach(b => b.classList.remove("active"));
+          btn.classList.add("active");
+          renderChannels();
+        };
+        categoryList.appendChild(btn);
+      });
+    }
+
+    function renderChannels() {
+      const keyword = search.value.toLowerCase();
+      const filtered = channels.filter(c =>
+        (currentCategory === "All" || c.group === currentCategory) &&
+        c.name.toLowerCase().includes(keyword)
+      );
+      channelList.innerHTML = '';
+      filtered.forEach(c => {
+        const div = document.createElement("div");
+        div.className = "channel";
+        div.innerHTML = `<img src="${c.logo}" onerror="this.src='https://via.placeholder.com/150x70?text=No+Logo'"><p>${c.name}</p>`;
+        div.onclick = () => playChannel(c);
+        channelList.appendChild(div);
+      });
+    }
+
+    async function loadHls(version) {
+      return new Promise((resolve, reject) => {
+        const existing = document.getElementById("hlsjs");
+        if (existing) existing.remove();
+        const script = document.createElement("script");
+        script.id = "hlsjs";
+        script.src = `https://cdn.jsdelivr.net/npm/hls.js@${version}`;
+        script.onload = resolve;
+        script.onerror = reject;
+        document.head.appendChild(script);
+      });
+    }
+
+    async function playChannel(channel) {
+      const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+      video.pause(); video.src = ""; video.load();
+
+      try {
+        if (!isMobile && channel.url.endsWith(".m3u8")) {
+          await loadHls(channel.hlsVersion);
+          const hls = new Hls();
+          hls.loadSource(channel.url);
+          hls.attachMedia(video);
+          hls.on(Hls.Events.MANIFEST_PARSED, () => video.play());
+        } else {
+          video.src = channel.url;
+          await video.play();
+        }
+        nowChannel.textContent = `Now Playing: ${channel.name}`;
+      } catch {
+        nowChannel.textContent = "⚠️ Cannot play channel.";
+      }
+    }
+
+    search.addEventListener("input", renderChannels);
+
+    window.addEventListener("load", async () => {
+      const savedUser = localStorage.getItem("username");
+      if (!savedUser) return;
+      const snapshot = await db.ref("users/" + savedUser).once("value");
+      if (!snapshot.exists()) return;
+      const data = snapshot.val();
+      const today = new Date().toISOString().split("T")[0];
+      const isExpired = data.devices?.expiration < today;
+      const devices = data.devices || {};
+      const activeSessions = Object.keys(devices).filter(key =>
+        !["password", "expiration", "playlist", "status"].includes(key)
+      );
+      if (isExpired || (!devices[sessionId] && activeSessions.length >= data.device_limit)) {
+        localStorage.clear();
+        return;
+      }
+      loginSection.style.display = "none";
+      iptvSection.style.display = "block";
+      loadPlaylists();
+    });
+  </script>
 </body>
 </html>
