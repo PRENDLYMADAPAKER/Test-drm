@@ -1,23 +1,43 @@
 // api/proxy.js
 import https from 'https';
 import http from 'http';
+import { URL } from 'url';
 
 export default async function handler(req, res) {
-  const url = req.query.url;
-  if (!url) return res.status(400).send('Missing URL');
-
-  const client = url.startsWith('https') ? https : http;
+  const targetUrl = req.query.url;
+  if (!targetUrl) return res.status(400).send('Missing URL');
 
   try {
-    client.get(url, (streamRes) => {
-      res.writeHead(streamRes.statusCode, streamRes.headers);
-      streamRes.pipe(res);
-    }).on('error', (err) => {
-      console.error(err);
-      res.status(500).send('Proxy error');
+    const parsedUrl = new URL(targetUrl);
+    const isHttps = parsedUrl.protocol === 'https:';
+    const client = isHttps ? https : http;
+
+    const options = {
+      hostname: parsedUrl.hostname,
+      path: parsedUrl.pathname + parsedUrl.search,
+      method: 'GET',
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+        'Accept': '*/*',
+        'Origin': req.headers.origin || '',
+        'Referer': req.headers.referer || '',
+        'Connection': 'keep-alive',
+      }
+    };
+
+    const proxyReq = client.request(options, proxyRes => {
+      res.writeHead(proxyRes.statusCode, proxyRes.headers);
+      proxyRes.pipe(res);
     });
+
+    proxyReq.on('error', err => {
+      console.error('[Proxy Error]', err.message);
+      res.status(500).send('Proxy Error: ' + err.message);
+    });
+
+    proxyReq.end();
   } catch (err) {
-    console.error(err);
-    res.status(500).send('Proxy failure');
+    console.error('[Proxy Failure]', err.message);
+    res.status(500).send('Proxy Failure');
   }
 }
