@@ -54,7 +54,7 @@ async function loadPlaylists() {
       allChannels.push({
         name,
         url: stream,
-        category: "IPTV PREMIUM",
+        category: "CIGNAL PLAY",
         logo
       });
     }
