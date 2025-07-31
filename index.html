@@ -1,77 +1,76 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <title>IPTV Stream Test</title>
-  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+  <title>IPTV Web App</title>
+  <meta charset="UTF-8" />
   <style>
-    body {
-      background: #111;
-      color: white;
-      font-family: Arial, sans-serif;
-      text-align: center;
-      padding: 20px;
-    }
-    video {
-      width: 90%;
-      max-width: 800px;
-      margin-top: 20px;
-      border: 4px solid #f0f0f0;
-      border-radius: 12px;
-    }
-    select {
-      font-size: 16px;
-      padding: 10px;
-      border-radius: 8px;
-    }
+    body { margin: 0; background: #111; color: #fff; font-family: sans-serif; }
+    #container { display: flex; height: 100vh; }
+    #sidebar { width: 300px; background: #222; overflow-y: auto; }
+    #main { flex: 1; display: flex; flex-direction: column; }
+    video { width: 100%; height: calc(100vh - 50px); background: black; }
+    .channel { padding: 10px; cursor: pointer; border-bottom: 1px solid #444; }
+    .channel:hover { background: #333; }
+    h2 { margin: 0; padding: 10px; background: #000; }
   </style>
 </head>
 <body>
-
-  <h1>🔴 IPTV Stream Player</h1>
-
-  <select id="streamSelector">
-    <option value="">-- Select a Stream --</option>
-    <option value="https://cors-proxy.fringe.zone/https%3A%2F%2Fv17.thetvapp.to%2Fhls%2FAEEast%2Ftracks-v1a1%2Fmono.m3u8%3Ftoken%3DVaD4Gg0sGbNr6UR5UL22SA%26expires%3D1753935538%26user_id%3DalEyMnZrUU1SMUR2Y1FLUXZnZFd1cG45Nm5HTWhKNzlOQ0YwYmlkcg%3D%3D">TheTVApp - A&E East</option>
-    <option value="http://ott.udptv.net/stream/iptv/a2z/master.m3u8?u=discord.gg/civ4&p=b48a689eecee46d3167cbb669dddcd7f2e9f877b9ed7ee2bcc5bdfd0ca930ffd">UDPTV - A2Z</option>
-  </select>
-
-  <video id="video" controls autoplay></video>
+  <div id="container">
+    <div id="sidebar">
+      <h2>Channels</h2>
+      <div id="channelList"></div>
+    </div>
+    <div id="main">
+      <video id="video" controls autoplay></video>
+    </div>
+  </div>
 
   <script>
+    const channelList = document.getElementById('channelList');
     const video = document.getElementById('video');
-    const selector = document.getElementById('streamSelector');
 
-    let hls;
+    // Load channels from JSON
+    fetch('channels.json')
+      .then(res => res.json())
+      .then(channels => {
+        channels.forEach(channel => {
+          const div = document.createElement('div');
+          div.className = 'channel';
+          div.innerText = channel.name;
+          div.onclick = () => loadChannel(channel);
+          channelList.appendChild(div);
+        });
 
-    selector.addEventListener('change', () => {
-      const selectedURL = selector.value;
+        // Auto play first channel
+        if (channels.length > 0) loadChannel(channels[0]);
+      });
 
-      if (!selectedURL) return;
+    function loadChannel(channel) {
+      video.pause();
 
-      if (hls) {
-        hls.destroy(); // clear previous instance
+      // Remove previous HLS if exists
+      if (window.hls) {
+        window.hls.destroy();
       }
 
-      if (Hls.isSupported()) {
-        hls = new Hls();
-        hls.loadSource(selectedURL);
-        hls.attachMedia(video);
-        hls.on(Hls.Events.MANIFEST_PARSED, () => {
-          video.play();
-        });
-        hls.on(Hls.Events.ERROR, (event, data) => {
-          console.error('HLS.js error', data);
-        });
-      } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-        video.src = selectedURL;
-        video.addEventListener('loadedmetadata', () => {
-          video.play();
-        });
-      } else {
-        alert('HLS not supported in this browser');
-      }
-    });
+      // Load HLS.js version based on source
+      const version = channel.category.includes('TheTVApp') ? '1.1.5' : '1.4.12';
+      const script = document.createElement('script');
+      script.src = `https://cdn.jsdelivr.net/npm/hls.js@${version}/dist/hls.min.js`;
+      script.onload = () => {
+        if (Hls.isSupported()) {
+          const hls = new Hls();
+          hls.loadSource(channel.url);
+          hls.attachMedia(video);
+          window.hls = hls;
+        } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+          video.src = channel.url;
+        } else {
+          alert('Your browser does not support HLS.');
+        }
+      };
+      document.head.appendChild(script);
+    }
   </script>
 </body>
 </html>
