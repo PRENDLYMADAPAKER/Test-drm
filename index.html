@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html>
 <head>
@@ -11,11 +10,14 @@
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
-  <!-- JWPlayer CDN -->
+  <!-- JWPlayer -->
   <script src="https://ssl.p.jwpcdn.com/player/v/8.36.6/jwplayer.js"></script>
-
+  <script>
+    jwplayer.key = "ITWMv7t88JGzI0xPwW8I0+LveiXX9SWbfdmt0ArUSyc=";
+  </script>
 </head>
 <body>
+  <!-- LOGIN SECTION -->
   <div id="login-section">
     <h2>Login</h2>
     <input type="text" id="username" placeholder="Username" /><br />
@@ -24,26 +26,29 @@
     <p id="login-error" style="color:red;"></p>
   </div>
 
+  <!-- IPTV APP MAIN -->
   <div id="app" style="display:none;">
     <h1>📺 IPTV Web App</h1>
-    <div id="video"></div>
-    <div id="categories"></div>
+    <div id="video" style="width:100%;max-width:100%;margin:0 auto;"></div>
+    <div id="categories" style="padding:10px;"></div>
   </div>
 
+  <!-- Firebase config -->
   <script>
-    // Firebase config
     const firebaseConfig = {
-  apiKey: "AIzaSyDssixgarRWvLMKtUsX7HLEt8uPGmNIRak",
-  authDomain: "iptv-login-3204b.firebaseapp.com",
-  databaseURL: "https://iptv-login-3204b-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "iptv-login-3204b",
-  storageBucket: "iptv-login-3204b.appspot.com",
-  messagingSenderId: "464216999882",
-  appId: "1:464216999882:web:d7e1f7d44adacd8b46b133"
-};
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
+      apiKey: "AIzaSyDssixgarRWvLMKtUsX7HLEt8uPGmNIRak",
+      authDomain: "iptv-login-3204b.firebaseapp.com",
+      databaseURL: "https://iptv-login-3204b-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "iptv-login-3204b",
+      storageBucket: "iptv-login-3204b.appspot.com",
+      messagingSenderId: "464216999882",
+      appId: "1:464216999882:web:d7e1f7d44adacd8b46b133"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
   </script>
+
+  <!-- App Logic -->
   <script src="cutie.js"></script>
 </body>
 </html>
