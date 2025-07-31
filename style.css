@@ -1,0 +1,29 @@
+body {
+  font-family: sans-serif;
+  background: #111;
+  color: white;
+  margin: 0;
+  padding: 0;
+}
+h1, h2, h3 {
+  margin-left: 20px;
+}
+input, button {
+  margin: 5px;
+  padding: 8px;
+}
+.channel-row {
+  display: flex;
+  overflow-x: auto;
+  padding: 10px;
+}
+.channel {
+  width: 120px;
+  margin: 5px;
+  text-align: center;
+  cursor: pointer;
+}
+.channel img {
+  width: 100%;
+  border-radius: 12px;
+}

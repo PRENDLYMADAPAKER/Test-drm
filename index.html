@@ -1,0 +1,49 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>IPTV Web - JWPlayer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="style.css" />
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+  <!-- JWPlayer CDN -->
+  <script src="https://ssl.p.jwpcdn.com/player/v/8.36.6/jwplayer.js"></script>
+
+</head>
+<body>
+  <div id="login-section">
+    <h2>Login</h2>
+    <input type="text" id="username" placeholder="Username" /><br />
+    <input type="password" id="password" placeholder="Password" /><br />
+    <button onclick="login()">Login</button>
+    <p id="login-error" style="color:red;"></p>
+  </div>
+
+  <div id="app" style="display:none;">
+    <h1>📺 IPTV Web App</h1>
+    <div id="video"></div>
+    <div id="categories"></div>
+  </div>
+
+  <script>
+    // Firebase config
+    const firebaseConfig = {
+  apiKey: "AIzaSyDssixgarRWvLMKtUsX7HLEt8uPGmNIRak",
+  authDomain: "iptv-login-3204b.firebaseapp.com",
+  databaseURL: "https://iptv-login-3204b-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "iptv-login-3204b",
+  storageBucket: "iptv-login-3204b.appspot.com",
+  messagingSenderId: "464216999882",
+  appId: "1:464216999882:web:d7e1f7d44adacd8b46b133"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+  </script>
+  <script src="cutie.js"></script>
+</body>
+</html>
