@@ -1,4 +1,4 @@
-// 🔐 Basic login + device + expiration checker
+// Firebase login + session control
 function login() {
   const user = document.getElementById("username").value.trim();
   const pass = document.getElementById("password").value.trim();
@@ -9,14 +9,14 @@ function login() {
       return;
     }
 
-    // ⏳ Expiration check
+    // Expiration
     const expiry = new Date(data.expiration);
     if (new Date() > expiry) {
       document.getElementById("login-error").innerText = "Account expired.";
       return;
     }
 
-    // 📱 Device limit check
+    // Device limit
     const sessionId = btoa(navigator.userAgent + Date.now());
     firebase.database().ref("users/" + user + "/sessions").once("value", s => {
       let sessions = s.val() || {};
@@ -24,8 +24,6 @@ function login() {
         document.getElementById("login-error").innerText = "Device limit reached.";
         return;
       }
-
-      // ✅ Save session and load app
       sessions[sessionId] = true;
       firebase.database().ref("users/" + user + "/sessions").set(sessions);
       document.getElementById("login-section").style.display = "none";
@@ -35,56 +33,37 @@ function login() {
   });
 }
 
-// 📄 Load and parse M3U playlists
+// Only IPTV PREMIUM playlist loader
 async function loadPlaylists() {
-  const urls = [
-    {
-      url: "https://raw.githubusercontent.com/PRENDLYMADAPAKER/ANG-KALAT-MO/main/UDPTV.m3u",
-      category: "UDPTV Live Streams",
-      useProxy: true
-    },
-    {
-      url: "https://raw.githubusercontent.com/PRENDLYMADAPAKER/ANG-KALAT-MO/main/TheTVApp.m3u",
-      category: "TheTVApp",
-      useProxy: false
-    }
-  ];
-
+  const url = "https://raw.githubusercontent.com/PRENDLYMADAPAKER/ANG-KALAT-MO/main/IPTV%20PREMIUM";
   let allChannels = [];
 
-  for (const source of urls) {
-    const res = await fetch(source.url);
-    const text = await res.text();
-    const lines = text.split(/\r?\n/);
+  const res = await fetch(url);
+  const text = await res.text();
+  const lines = text.split(/\r?\n/);
 
-    for (let i = 0; i < lines.length; i++) {
-      if (lines[i].startsWith("#EXTINF")) {
-        const name = lines[i].split(",")[1]?.trim() || "Untitled";
-        const logoMatch = lines[i].match(/tvg-logo="([^"]+)"/);
-        const logo = logoMatch ? logoMatch[1] : "https://dummyimage.com/100x100/000/fff.png&text=No+Logo";
+  for (let i = 0; i < lines.length; i++) {
+    if (lines[i].startsWith("#EXTINF")) {
+      const name = lines[i].split(",")[1]?.trim() || "Untitled";
+      const logoMatch = lines[i].match(/tvg-logo="([^"]+)"/);
+      const logo = logoMatch ? logoMatch[1] : "https://dummyimage.com/100x100/000/fff.png&text=No+Logo";
 
-        let streamURL = lines[i + 1];
-        if (!streamURL || !streamURL.startsWith("http")) continue;
+      const stream = lines[i + 1];
+      if (!stream || !stream.startsWith("http")) continue;
 
-        // 🌐 Apply proxy only for UDPTV and http sources
-        if (source.useProxy && streamURL.startsWith("http://")) {
-          streamURL = "https://udptv-proxy-server.onrender.com/proxy?url=" + encodeURIComponent(streamURL);
-        }
-
-        allChannels.push({
-          name,
-          url: streamURL,
-          category: source.category,
-          logo
-        });
-      }
+      allChannels.push({
+        name,
+        url: stream,
+        category: "IPTV PREMIUM",
+        logo
+      });
     }
   }
 
   renderCategories(allChannels);
 }
 
-// 🎬 Netflix-style UI layout
+// Netflix-style Channel UI
 function renderCategories(channels) {
   const grouped = {};
   channels.forEach(c => {
@@ -106,7 +85,7 @@ function renderCategories(channels) {
   }
 }
 
-// ▶️ JWPlayer setup
+// JWPlayer Setup
 function play(url) {
   jwplayer("video").setup({
     file: url,
