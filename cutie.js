@@ -36,8 +36,16 @@ function login() {
 // Parse M3U from GitHub
 async function loadPlaylists() {
   const urls = [
-    { url: "https://raw.githubusercontent.com/PRENDLYMADAPAKER/ANG-KALAT-MO/main/UDPTV.m3u", category: "UDPTV Live Streams" },
-    { url: "https://raw.githubusercontent.com/PRENDLYMADAPAKER/ANG-KALAT-MO/main/TheTVApp.m3u", category: "TheTVApp" }
+    {
+      url: "https://raw.githubusercontent.com/PRENDLYMADAPAKER/ANG-KALAT-MO/main/UDPTV.m3u",
+      category: "UDPTV Live Streams",
+      useProxy: true
+    },
+    {
+      url: "https://raw.githubusercontent.com/PRENDLYMADAPAKER/ANG-KALAT-MO/main/TheTVApp.m3u",
+      category: "TheTVApp",
+      useProxy: false
+    }
   ];
 
   let allChannels = [];
@@ -51,17 +59,21 @@ async function loadPlaylists() {
         const name = lines[i].split(",")[1]?.trim() || "Untitled";
         const logoMatch = lines[i].match(/tvg-logo="([^"]+)"/);
         const logo = logoMatch ? logoMatch[1] : "https://dummyimage.com/100x100/000/fff.png&text=No+Logo";
-        const url = lines[i + 1].startsWith("http") ? lines[i + 1] : null;
-        if (url) {
-          allChannels.push({
-            name,
-            url: url.startsWith("http://")
-              ? "https://m3u-proxy-server.onrender.com/proxy?url=" + encodeURIComponent(url)
-              : url,
-            category: source.category,
-            logo
-          });
+        
+        let streamURL = lines[i + 1];
+        if (!streamURL || !streamURL.startsWith("http")) continue;
+
+        // ✅ Apply proxy only for UDPTV
+        if (source.useProxy) {
+          streamURL = "https://udptv-proxy-server.onrender.com/proxy?url=" + encodeURIComponent(streamURL);
         }
+
+        allChannels.push({
+          name,
+          url: streamURL,
+          category: source.category,
+          logo
+        });
       }
     }
   }
