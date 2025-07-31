@@ -35,7 +35,7 @@ function login() {
 
 // Only IPTV PREMIUM playlist loader
 async function loadPlaylists() {
-  const url = "https://raw.githubusercontent.com/PRENDLYMADAPAKER/ANG-KALAT-MO/main/IPTV%20PREMIUM";
+  const url = "https://raw.githubusercontent.com/PRENDLYMADAPAKER/ANG-KALAT-MO/main/CIGNAL%20PLAY.m3u";
   let allChannels = [];
 
   const res = await fetch(url);
